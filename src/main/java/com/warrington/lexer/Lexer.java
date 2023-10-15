@@ -5,6 +5,7 @@ import static com.warrington.token.TokenType.ASTERISK;
 import static com.warrington.token.TokenType.BANG;
 import static com.warrington.token.TokenType.COMMA;
 import static com.warrington.token.TokenType.EOF;
+import static com.warrington.token.TokenType.EQ;
 import static com.warrington.token.TokenType.GT;
 import static com.warrington.token.TokenType.ILLEGAL;
 import static com.warrington.token.TokenType.INT;
@@ -12,6 +13,7 @@ import static com.warrington.token.TokenType.LPAREN;
 import static com.warrington.token.TokenType.LSQUIRLY;
 import static com.warrington.token.TokenType.LT;
 import static com.warrington.token.TokenType.MINUS;
+import static com.warrington.token.TokenType.NOT_EQ;
 import static com.warrington.token.TokenType.PLUS;
 import static com.warrington.token.TokenType.RPAREN;
 import static com.warrington.token.TokenType.RSQUIRLY;
@@ -42,31 +44,21 @@ class Lexer {
 
         skipWhitespace();
 
-        // final Token token = switch (ch) {
-        // case '=' -> new Token(ASSIGN, ch);
-        // case ';' -> new Token(SEMICOLON, ch);
-        // case '(' -> new Token(LPAREN, ch);
-        // case ')' -> new Token(RPAREN, ch);
-        // case ',' -> new Token(COMMA, ch);
-        // case '+' -> new Token(PLUS, ch);
-        // case '{' -> new Token(LSQUIRLY, ch);
-        // case '}' -> new Token(RSQUIRLY, ch);
-        // case '\0' -> new Token(EOF, "");
-        // default -> {
-        // if (isLetter(ch)) {
-        // final String identifier = readIdentifier();
-
-        // yield new Token(TokenType.lookupIdent(identifier), identifier);
-        // } else {
-        // yield new Token(ILLEGAL, ch);
-        // }
-        // }
-        // };
-
         switch (ch) {
             case '=':
-                token = new Token(ASSIGN, ch);
-                break;
+                if (peekChar() == '=') {
+                    final char firstEq = ch;
+
+                    readChar();
+
+                    final String literal = "" + firstEq + ch;
+
+                    token = new Token(EQ, literal);
+                    break;
+                } else {
+                    token = new Token(ASSIGN, ch);
+                    break;
+                }
             case ';':
                 token = new Token(SEMICOLON, ch);
                 break;
@@ -92,8 +84,19 @@ class Lexer {
                 token = new Token(MINUS, ch);
                 break;
             case '!':
-                token = new Token(BANG, ch);
-                break;
+                if (peekChar() == '=') {
+                    final char bang = ch;
+
+                    readChar();
+
+                    final String literal = "" + bang + ch;
+
+                    token = new Token(NOT_EQ, literal);
+                    break;
+                } else {
+                    token = new Token(BANG, ch);
+                    break;
+                }
             case '*':
                 token = new Token(ASTERISK, ch);
                 break;
@@ -125,6 +128,14 @@ class Lexer {
         readChar();
 
         return token;
+    }
+
+    private char peekChar() {
+        if (readPosition >= input.length()) {
+            return 0;
+        } else {
+            return input.charAt(readPosition);
+        }
     }
 
     private String readIdentifier() {

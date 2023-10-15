@@ -1,29 +1,6 @@
 package com.warrington.lexer;
 
-import static com.warrington.token.TokenType.ASSIGN;
-import static com.warrington.token.TokenType.ASTERISK;
-import static com.warrington.token.TokenType.BANG;
-import static com.warrington.token.TokenType.COMMA;
-import static com.warrington.token.TokenType.ELSE;
-import static com.warrington.token.TokenType.EOF;
-import static com.warrington.token.TokenType.FALSE;
-import static com.warrington.token.TokenType.FUNCTION;
-import static com.warrington.token.TokenType.GT;
-import static com.warrington.token.TokenType.IDENT;
-import static com.warrington.token.TokenType.IF;
-import static com.warrington.token.TokenType.INT;
-import static com.warrington.token.TokenType.LET;
-import static com.warrington.token.TokenType.LPAREN;
-import static com.warrington.token.TokenType.LSQUIRLY;
-import static com.warrington.token.TokenType.LT;
-import static com.warrington.token.TokenType.MINUS;
-import static com.warrington.token.TokenType.PLUS;
-import static com.warrington.token.TokenType.RETURN;
-import static com.warrington.token.TokenType.RPAREN;
-import static com.warrington.token.TokenType.RSQUIRLY;
-import static com.warrington.token.TokenType.SEMICOLON;
-import static com.warrington.token.TokenType.SLASH;
-import static com.warrington.token.TokenType.TRUE;
+import static com.warrington.token.TokenType.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
@@ -51,6 +28,9 @@ class LexerTest {
             } else {
                 return false;
             }
+
+            10 == 10;
+            10 != 9;
             """;
 
     @Test
@@ -123,6 +103,14 @@ class LexerTest {
                 new Token(FALSE, "false"),
                 new Token(SEMICOLON, ";"),
                 new Token(RSQUIRLY, "}"),
+                new Token(INT, "10"),
+                new Token(EQ, "=="),
+                new Token(INT, "10"),
+                new Token(SEMICOLON, ";"),
+                new Token(INT, "10"),
+                new Token(NOT_EQ, "!="),
+                new Token(INT, "9"),
+                new Token(SEMICOLON, ";"),
                 new Token(EOF, ""));
 
         Token token = null;
