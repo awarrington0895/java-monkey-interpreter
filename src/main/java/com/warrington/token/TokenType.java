@@ -24,7 +24,12 @@ public enum TokenType {
 
     // Keywords
     FUNCTION("FUNCTION"),
-    LET("LET");
+    LET("LET"),
+    TRUE("TRUE"),
+    FALSE("FALSE"),
+    IF("IF"),
+    ELSE("ELSE"),
+    RETURN("RETURN");
 
     public String literalValue;
 
@@ -38,5 +43,10 @@ public enum TokenType {
 
     private static final Map<String, TokenType> keywords = Map.of(
             "fn", FUNCTION,
-            "let", LET);
+            "let", LET,
+            "true", TRUE,
+            "false", FALSE,
+            "if", IF,
+            "else", ELSE,
+            "return", RETURN);
 }
