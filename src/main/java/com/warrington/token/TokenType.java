@@ -15,6 +15,12 @@ public enum TokenType {
     RPAREN(")"),
     LSQUIRLY("{"),
     RSQUIRLY("}"),
+    MINUS("-"),
+    BANG("!"),
+    ASTERISK("*"),
+    SLASH("/"),
+    LT("<"),
+    GT(">"),
 
     // Keywords
     FUNCTION("FUNCTION"),
@@ -31,7 +37,6 @@ public enum TokenType {
     }
 
     private static final Map<String, TokenType> keywords = Map.of(
-        "fn", FUNCTION,
-        "let", LET
-    );
+            "fn", FUNCTION,
+            "let", LET);
 }

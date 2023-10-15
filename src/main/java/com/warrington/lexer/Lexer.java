@@ -1,9 +1,25 @@
 package com.warrington.lexer;
 
+import static com.warrington.token.TokenType.ASSIGN;
+import static com.warrington.token.TokenType.ASTERISK;
+import static com.warrington.token.TokenType.BANG;
+import static com.warrington.token.TokenType.COMMA;
+import static com.warrington.token.TokenType.EOF;
+import static com.warrington.token.TokenType.GT;
+import static com.warrington.token.TokenType.ILLEGAL;
+import static com.warrington.token.TokenType.INT;
+import static com.warrington.token.TokenType.LPAREN;
+import static com.warrington.token.TokenType.LSQUIRLY;
+import static com.warrington.token.TokenType.LT;
+import static com.warrington.token.TokenType.MINUS;
+import static com.warrington.token.TokenType.PLUS;
+import static com.warrington.token.TokenType.RPAREN;
+import static com.warrington.token.TokenType.RSQUIRLY;
+import static com.warrington.token.TokenType.SEMICOLON;
+import static com.warrington.token.TokenType.SLASH;
+
 import com.warrington.token.Token;
 import com.warrington.token.TokenType;
-
-import static com.warrington.token.TokenType.*;
 
 class Lexer {
 
@@ -72,6 +88,24 @@ class Lexer {
             case '}':
                 token = new Token(RSQUIRLY, ch);
                 break;
+            case '-':
+                token = new Token(MINUS, ch);
+                break;
+            case '!':
+                token = new Token(BANG, ch);
+                break;
+            case '*':
+                token = new Token(ASTERISK, ch);
+                break;
+            case '/':
+                token = new Token(SLASH, ch);
+                break;
+            case '<':
+                token = new Token(LT, ch);
+                break;
+            case '>':
+                token = new Token(GT, ch);
+                break;
             case '\0':
                 token = new Token(EOF, "");
                 break;
@@ -82,8 +116,7 @@ class Lexer {
                     return new Token(TokenType.lookupIdent(identifier), identifier);
                 } else if (isDigit(ch)) {
                     return new Token(INT, readNumber());
-                } 
-                else {
+                } else {
                     token = new Token(ILLEGAL, ch);
                     break;
                 }
@@ -141,9 +174,9 @@ class Lexer {
 
     private boolean isWhitespace(char ch) {
         return ch == ' '
-            || ch == '\t'
-            || ch == '\n'
-            || ch == '\r';
+                || ch == '\t'
+                || ch == '\n'
+                || ch == '\r';
     }
 
 }
