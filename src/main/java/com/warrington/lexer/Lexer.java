@@ -23,7 +23,7 @@ import static com.warrington.token.TokenType.SLASH;
 import com.warrington.token.Token;
 import com.warrington.token.TokenType;
 
-class Lexer {
+public class Lexer {
 
     private final String input;
 
