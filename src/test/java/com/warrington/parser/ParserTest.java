@@ -28,7 +28,7 @@ class ParserTest {
         final Program program = parser.parseProgram();
 
         if (program == null) {
-            fail("parseProgram() returned nil");
+            fail("parseProgram() returned null");
         }
 
         if (program.getStatements().size() != 3) {
@@ -53,18 +53,18 @@ class ParserTest {
     }
 
     boolean testLetStatement(Statement statement, String name) {
-        if (statement.tokenLiteral() != "let") {
+        if (!statement.tokenLiteral().equals("let")) {
             fail("statement.tokenLiteral not 'let'. got=%s".formatted(statement.tokenLiteral()));
             return false;
         }
 
         if (statement instanceof LetStatement letStmt) {
-            if (letStmt.getName().getValue() != name) {
+            if (!letStmt.getName().getValue().equals(name)) {
                 fail("letStmt.getName().getValue() not '%s'. got=%s".formatted(name, letStmt.getName().getValue()));
                 return false;
             }
 
-            if (letStmt.getName().tokenLiteral() != name) {
+            if (!letStmt.getName().tokenLiteral().equals(name)) {
                 fail("letStmt.getName().tokenLiteral() not '%s'. got=%s".formatted(name,
                         letStmt.getName().tokenLiteral()));
                 return false;

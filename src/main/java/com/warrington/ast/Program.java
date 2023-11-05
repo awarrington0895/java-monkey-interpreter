@@ -15,6 +15,10 @@ public class Program implements Node {
         }
     }
 
+    public void addStatement(Statement statement) {
+        statements.add(statement);
+    }
+
     public List<Statement> getStatements() {
         return statements;
     }
