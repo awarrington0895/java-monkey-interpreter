@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
 
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 
 import com.warrington.ast.LetStatement;
@@ -16,9 +17,9 @@ class ParserTest {
     @Test
     void testLetStatements() {
         final var input = """
-                let x = 5;
-                let y = 10;
-                let foobar = 838383;
+                let x 5;
+                let = 10;
+                let 838383;
                 """;
 
         final var lexer = new Lexer(input);
@@ -26,6 +27,8 @@ class ParserTest {
         final var parser = new Parser(lexer);
 
         final Program program = parser.parseProgram();
+
+        checkParserErrors(parser);
 
         if (program == null) {
             fail("parseProgram() returned null");
@@ -76,5 +79,19 @@ class ParserTest {
             return false;
         }
 
+    }
+
+    void checkParserErrors(Parser parser) {
+        var softly = new SoftAssertions();
+
+        final List<String> errors = parser.errors();
+
+        if (errors.size() == 0) {
+            return;
+        }
+
+        errors.forEach(msg -> softly.fail("parser error: %s", msg));
+
+        softly.assertAll();
     }
 }

@@ -1,5 +1,8 @@
 package com.warrington.parser;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.warrington.ast.Identifier;
 import com.warrington.ast.LetStatement;
 import com.warrington.ast.Program;
@@ -10,6 +13,7 @@ import com.warrington.token.TokenType;
 
 class Parser {
     private Lexer lexer;
+    private List<String> errors = new ArrayList<>();
 
     Token curToken;
     Token peekToken;
@@ -42,13 +46,21 @@ class Parser {
         return program;
     }
 
+    List<String> errors() {
+        return this.errors;
+    }
+
+    void peekError(TokenType tokenType) {
+        final var message = "expected next token to be %s, got %s".formatted(tokenType, peekToken.type());
+
+        errors.add(message);
+    }
+
     private Statement parseStatement() {
-        switch (curToken.type()) {
-            case LET:
-                return parseLetStatement();
-            default:
-                return null;
-        }
+        return switch (curToken.type()) {
+            case LET -> parseLetStatement();
+            default -> null;
+        };
     }
 
     private Statement parseLetStatement() {
@@ -85,6 +97,7 @@ class Parser {
             nextToken();
             return true;
         } else {
+            peekError(expectedType);
             return false;
         }
     }
