@@ -6,6 +6,7 @@ import java.util.List;
 import com.warrington.ast.Identifier;
 import com.warrington.ast.LetStatement;
 import com.warrington.ast.Program;
+import com.warrington.ast.ReturnStatement;
 import com.warrington.ast.Statement;
 import com.warrington.lexer.Lexer;
 import com.warrington.token.Token;
@@ -59,6 +60,7 @@ class Parser {
     private Statement parseStatement() {
         return switch (curToken.type()) {
             case LET -> parseLetStatement();
+            case RETURN -> parseReturnStatement();
             default -> null;
         };
     }
@@ -77,6 +79,18 @@ class Parser {
         }
 
         // TODO: We're skipping the expressions until we encounter a semicolon
+        while (!curTokenIs(TokenType.SEMICOLON)) {
+            nextToken();
+        }
+
+        return stmt;
+    }
+
+    private Statement parseReturnStatement() {
+        final var stmt = new ReturnStatement(curToken);
+
+        nextToken();
+
         while (!curTokenIs(TokenType.SEMICOLON)) {
             nextToken();
         }

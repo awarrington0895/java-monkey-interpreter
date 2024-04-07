@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import com.warrington.ast.LetStatement;
 import com.warrington.ast.Program;
+import com.warrington.ast.ReturnStatement;
 import com.warrington.ast.Statement;
 import com.warrington.lexer.Lexer;
 
@@ -17,9 +18,9 @@ class ParserTest {
     @Test
     void testLetStatements() {
         final var input = """
-                let x 5;
-                let = 10;
-                let 838383;
+                let x = 5;
+                let y = 10;
+                let foobar = 838383;
                 """;
 
         final var lexer = new Lexer(input);
@@ -53,6 +54,42 @@ class ParserTest {
 
         }
 
+    }
+
+    @Test
+    void testReturnStatements() {
+        final var input = """
+                return 5;
+                return 10;
+                return 993322;
+                """;
+
+        final var lexer = new Lexer(input);
+
+        final var parser = new Parser(lexer);
+
+        final Program program = parser.parseProgram();
+
+        checkParserErrors(parser);
+
+        if (program == null) {
+            fail("parseProgram() returned null");
+        }
+
+        if (program.getStatements().size() != 3) {
+            fail("program.getStatements() does not contain 3 statements. got=%d"
+                    .formatted(program.getStatements().size()));
+        }
+
+        program.getStatements().forEach(statement -> {
+            if (statement instanceof ReturnStatement returnStatement) {
+                if (!returnStatement.tokenLiteral().equals("return")) {
+                    fail("statement.tokenLiteral not 'return'. got=%s".formatted(statement.tokenLiteral()));
+                }
+            } else {
+                fail("statement is not a ReturnStatement");
+            }
+        });
     }
 
     boolean testLetStatement(Statement statement, String name) {
