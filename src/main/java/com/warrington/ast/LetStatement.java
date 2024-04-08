@@ -16,12 +16,33 @@ public class LetStatement implements Statement {
         return token.literal();
     }
 
+    @Override
+    public String toString() {
+        final var builder = new StringBuilder();
+
+        builder.append(tokenLiteral() + " ");
+        builder.append(name.toString());
+        builder.append(" = ");
+
+        if (value != null) {
+            builder.append(value.toString());
+        }
+
+        builder.append(";");
+
+        return builder.toString();
+    }
+
     public Identifier getName() {
         return this.name;
     }
 
     public void setName(Identifier identifier) {
         this.name = identifier;
+    }
+
+    public void setValue(Expression value) {
+        this.value = value;
     }
 
 }

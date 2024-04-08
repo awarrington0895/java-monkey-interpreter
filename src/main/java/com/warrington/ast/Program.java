@@ -15,6 +15,15 @@ public class Program implements Node {
         }
     }
 
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+
+        statements.forEach(stmt -> builder.append(stmt.toString()));
+
+        return builder.toString();
+    }
+
     public void addStatement(Statement statement) {
         statements.add(statement);
     }

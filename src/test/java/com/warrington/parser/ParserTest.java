@@ -7,11 +7,14 @@ import java.util.List;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 
+import com.warrington.ast.Identifier;
 import com.warrington.ast.LetStatement;
 import com.warrington.ast.Program;
 import com.warrington.ast.ReturnStatement;
 import com.warrington.ast.Statement;
 import com.warrington.lexer.Lexer;
+import com.warrington.token.Token;
+import com.warrington.token.TokenType;
 
 class ParserTest {
 
@@ -54,6 +57,24 @@ class ParserTest {
 
         }
 
+    }
+
+    @Test
+    void testString() {
+        Program program = new Program();
+
+        LetStatement letStatement = new LetStatement(new Token(TokenType.LET, "let"));
+        Identifier myVar = new Identifier(new Token(TokenType.IDENT, "myVar"), "myVar");
+        Identifier anotherVar = new Identifier(new Token(TokenType.IDENT, "anotherVar"), "anotherVar");
+
+        letStatement.setName(myVar);
+        letStatement.setValue(anotherVar);
+
+        program.addStatement(letStatement);
+
+        if (!program.toString().equals("let myVar = anotherVar;")) {
+            fail("program.string() wrong. got=%s".formatted(program.toString()));
+        }
     }
 
     @Test

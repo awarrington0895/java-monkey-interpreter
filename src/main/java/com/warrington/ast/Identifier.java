@@ -15,6 +15,11 @@ public class Identifier implements Expression {
         return token.literal();
     }
 
+    @Override
+    public String toString() {
+        return value;
+    }
+
     public Identifier(Token token) {
         this(token, token.literal());
     }
