@@ -1,5 +1,6 @@
 package com.warrington.parser;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
@@ -7,6 +8,7 @@ import java.util.List;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 
+import com.warrington.ast.ExpressionStatement;
 import com.warrington.ast.Identifier;
 import com.warrington.ast.LetStatement;
 import com.warrington.ast.Program;
@@ -17,6 +19,37 @@ import com.warrington.token.Token;
 import com.warrington.token.TokenType;
 
 class ParserTest {
+
+    @Test
+    void testIdentifierExpression() {
+        final var input = "foobar;";
+
+        final var lexer = new Lexer(input);
+
+        final var parser = new Parser(lexer);
+
+        final Program program = parser.parseProgram();
+
+        checkParserErrors(parser);
+
+        final List<Statement> statements = program.getStatements();
+
+        assertThat(statements.size())
+            .withFailMessage("program has not enough statements. got=%d", statements.size())
+            .isEqualTo(1);
+
+        final ExpressionStatement stmt = (ExpressionStatement) statements.get(0);
+
+        final var ident = (Identifier) stmt.getExpression();
+
+        assertThat(ident.getValue())
+            .withFailMessage("ident.getValue() not %s. got=%s", "foobar", ident.getValue())
+            .isEqualTo("foobar");
+
+        assertThat(ident.tokenLiteral())
+            .withFailMessage("ident.tokenLiteral() not %s. got=%s", "foobar", ident.tokenLiteral())
+            .isEqualTo("foobar");
+    }
 
     @Test
     void testLetStatements() {

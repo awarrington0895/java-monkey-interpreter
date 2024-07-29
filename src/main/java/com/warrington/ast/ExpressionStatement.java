@@ -6,6 +6,11 @@ public class ExpressionStatement implements Statement {
     private Token token;
     private Expression expression;
 
+    public ExpressionStatement(Token token, Expression expression) {
+        this.token = token;
+        this.expression = expression;
+    }
+
     @Override
     public String tokenLiteral() {
         return token.literal();
@@ -18,5 +23,9 @@ public class ExpressionStatement implements Statement {
         }
 
         return "";
+    }
+
+    public Expression getExpression() {
+        return expression;
     }
 }

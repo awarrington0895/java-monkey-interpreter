@@ -1,6 +1,11 @@
 package com.warrington.parser;
 
 import com.warrington.ast.Expression;
+import com.warrington.ast.ExpressionStatement;
+
+import static com.warrington.token.TokenType.IDENT;
+import static com.warrington.token.TokenType.SEMICOLON;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,14 +29,16 @@ class Parser {
     Token curToken;
     Token peekToken;
 
-    Map<Token, Supplier<Expression>> prefixParseFns;
-    Map<Token, Function<Expression, Expression>> infixParseFns;
+    Map<TokenType, Supplier<Expression>> prefixParseFns;
+    Map<TokenType, Function<Expression, Expression>> infixParseFns;
 
     public Parser(Lexer lexer) {
         this.lexer = lexer;
 
         this.prefixParseFns = new HashMap<>();
         this.infixParseFns = new HashMap<>();
+
+        registerPrefix(IDENT, this::parseIdentifier);
 
         nextToken();
         nextToken();
@@ -72,7 +79,7 @@ class Parser {
         return switch (curToken.type()) {
             case LET -> parseLetStatement();
             case RETURN -> parseReturnStatement();
-            default -> null;
+            default -> parseExpressionStatement();
         };
     }
 
@@ -127,11 +134,37 @@ class Parser {
         }
     }
 
-    private void registerPrefix(Token token, Supplier<Expression> fn) {
+    private void registerPrefix(TokenType token, Supplier<Expression> fn) {
         this.prefixParseFns.put(token, fn);
     }
 
-    private void registerInfix(Token token, Function<Expression, Expression> fn) {
+    private void registerInfix(TokenType token, Function<Expression, Expression> fn) {
         this.infixParseFns.put(token, fn);
+    }
+
+    private ExpressionStatement parseExpressionStatement() {
+        final var stmt = new ExpressionStatement(curToken, parseExpression(Precedence.LOWEST));
+
+        if (peekTokenIs(SEMICOLON)) {
+            nextToken();
+        }
+
+        return stmt;
+    }
+
+    private Expression parseExpression(Precedence precedence) {
+        final Supplier<Expression> prefix = prefixParseFns.get(curToken.type());
+
+        if (prefix == null) {
+            return null;
+        }
+
+        final var leftExpression = prefix.get();
+
+        return leftExpression;
+    }
+
+    private Expression parseIdentifier() {
+        return new Identifier(curToken, curToken.literal());
     }
 }
