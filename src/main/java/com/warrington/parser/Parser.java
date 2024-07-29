@@ -1,7 +1,12 @@
 package com.warrington.parser;
 
+import com.warrington.ast.Expression;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.warrington.ast.Identifier;
 import com.warrington.ast.LetStatement;
@@ -19,8 +24,14 @@ class Parser {
     Token curToken;
     Token peekToken;
 
+    Map<Token, Supplier<Expression>> prefixParseFns;
+    Map<Token, Function<Expression, Expression>> infixParseFns;
+
     public Parser(Lexer lexer) {
         this.lexer = lexer;
+
+        this.prefixParseFns = new HashMap<>();
+        this.infixParseFns = new HashMap<>();
 
         nextToken();
         nextToken();
@@ -114,5 +125,13 @@ class Parser {
             peekError(expectedType);
             return false;
         }
+    }
+
+    private void registerPrefix(Token token, Supplier<Expression> fn) {
+        this.prefixParseFns.put(token, fn);
+    }
+
+    private void registerInfix(Token token, Function<Expression, Expression> fn) {
+        this.infixParseFns.put(token, fn);
     }
 }
