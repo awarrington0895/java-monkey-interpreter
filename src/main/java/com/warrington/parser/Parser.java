@@ -29,8 +29,8 @@ class Parser {
     Token curToken;
     Token peekToken;
 
-    Map<TokenType, Supplier<Expression>> prefixParseFns;
-    Map<TokenType, Function<Expression, Expression>> infixParseFns;
+    Map<TokenType, PrefixParseFn> prefixParseFns;
+    Map<TokenType, InfixParseFn> infixParseFns;
 
     public Parser(Lexer lexer) {
         this.lexer = lexer;
@@ -134,11 +134,11 @@ class Parser {
         }
     }
 
-    private void registerPrefix(TokenType token, Supplier<Expression> fn) {
+    private void registerPrefix(TokenType token, PrefixParseFn fn) {
         this.prefixParseFns.put(token, fn);
     }
 
-    private void registerInfix(TokenType token, Function<Expression, Expression> fn) {
+    private void registerInfix(TokenType token, InfixParseFn fn) {
         this.infixParseFns.put(token, fn);
     }
 
@@ -153,7 +153,7 @@ class Parser {
     }
 
     private Expression parseExpression(Precedence precedence) {
-        final Supplier<Expression> prefix = prefixParseFns.get(curToken.type());
+        final PrefixParseFn prefix = prefixParseFns.get(curToken.type());
 
         if (prefix == null) {
             return null;
