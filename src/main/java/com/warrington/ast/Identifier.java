@@ -6,7 +6,7 @@ public class Identifier implements Expression {
     private Token token;
     private String value;
 
-    public String getValue() {
+    public String value() {
         return value;
     }
 

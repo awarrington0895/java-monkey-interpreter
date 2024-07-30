@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import com.warrington.ast.ExpressionStatement;
 import com.warrington.ast.Identifier;
+import com.warrington.ast.IntegerLiteral;
 import com.warrington.ast.LetStatement;
 import com.warrington.ast.Program;
 import com.warrington.ast.ReturnStatement;
@@ -19,6 +20,37 @@ import com.warrington.token.Token;
 import com.warrington.token.TokenType;
 
 class ParserTest {
+
+    @Test
+    void testIntegerLiteral() {
+        final var input = "5;";
+
+        final var lexer = new Lexer(input);
+
+        final var parser = new Parser(lexer);
+
+        final Program program = parser.parseProgram();
+
+        checkParserErrors(parser);
+
+        final List<Statement> statements = program.getStatements();
+
+        assertThat(statements.size())
+            .withFailMessage("program has not enough statements. got=%d", statements.size())
+            .isEqualTo(1);
+
+        final ExpressionStatement stmt = (ExpressionStatement) statements.get(0);
+
+        final var literal = (IntegerLiteral) stmt.getExpression();
+
+        assertThat(literal.value())
+            .withFailMessage("literal.value() not %s. got=%s", "foobar", literal.value())
+            .isEqualTo(5);
+
+        assertThat(literal.tokenLiteral())
+            .withFailMessage("literal.tokenLiteral() not %s. got=%s", "foobar", literal.tokenLiteral())
+            .isEqualTo("5");
+    }
 
     @Test
     void testIdentifierExpression() {
@@ -42,8 +74,8 @@ class ParserTest {
 
         final var ident = (Identifier) stmt.getExpression();
 
-        assertThat(ident.getValue())
-            .withFailMessage("ident.getValue() not %s. got=%s", "foobar", ident.getValue())
+        assertThat(ident.value())
+            .withFailMessage("ident.getValue() not %s. got=%s", "foobar", ident.value())
             .isEqualTo("foobar");
 
         assertThat(ident.tokenLiteral())
@@ -153,8 +185,8 @@ class ParserTest {
         }
 
         if (statement instanceof LetStatement letStmt) {
-            if (!letStmt.getName().getValue().equals(name)) {
-                fail("letStmt.getName().getValue() not '%s'. got=%s".formatted(name, letStmt.getName().getValue()));
+            if (!letStmt.getName().value().equals(name)) {
+                fail("letStmt.getName().getValue() not '%s'. got=%s".formatted(name, letStmt.getName().value()));
                 return false;
             }
 

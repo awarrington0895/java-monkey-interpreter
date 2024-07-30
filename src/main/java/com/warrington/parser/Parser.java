@@ -4,16 +4,16 @@ import com.warrington.ast.Expression;
 import com.warrington.ast.ExpressionStatement;
 
 import static com.warrington.token.TokenType.IDENT;
+import static com.warrington.token.TokenType.INT;
 import static com.warrington.token.TokenType.SEMICOLON;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import com.warrington.ast.Identifier;
+import com.warrington.ast.IntegerLiteral;
 import com.warrington.ast.LetStatement;
 import com.warrington.ast.Program;
 import com.warrington.ast.ReturnStatement;
@@ -39,6 +39,7 @@ class Parser {
         this.infixParseFns = new HashMap<>();
 
         registerPrefix(IDENT, this::parseIdentifier);
+        registerPrefix(INT, this::parseIntegerLiteral);
 
         nextToken();
         nextToken();
@@ -166,5 +167,19 @@ class Parser {
 
     private Expression parseIdentifier() {
         return new Identifier(curToken, curToken.literal());
+    }
+
+    private Expression parseIntegerLiteral() {
+        int value;
+
+        try {
+            value = Integer.parseInt(curToken.literal());
+        } catch (NumberFormatException ex) {
+            errors.add("could not parse %s as integer".formatted(curToken.literal()));
+
+            return null;
+        }
+
+        return new IntegerLiteral(curToken, value);
     }
 }
