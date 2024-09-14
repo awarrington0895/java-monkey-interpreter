@@ -3,8 +3,10 @@ package com.warrington.parser;
 import com.warrington.ast.Expression;
 import com.warrington.ast.ExpressionStatement;
 
+import static com.warrington.token.TokenType.BANG;
 import static com.warrington.token.TokenType.IDENT;
 import static com.warrington.token.TokenType.INT;
+import static com.warrington.token.TokenType.MINUS;
 import static com.warrington.token.TokenType.SEMICOLON;
 
 import java.util.ArrayList;
@@ -15,6 +17,7 @@ import java.util.Map;
 import com.warrington.ast.Identifier;
 import com.warrington.ast.IntegerLiteral;
 import com.warrington.ast.LetStatement;
+import com.warrington.ast.PrefixExpression;
 import com.warrington.ast.Program;
 import com.warrington.ast.ReturnStatement;
 import com.warrington.ast.Statement;
@@ -40,6 +43,8 @@ class Parser {
 
         registerPrefix(IDENT, this::parseIdentifier);
         registerPrefix(INT, this::parseIntegerLiteral);
+        registerPrefix(BANG, this::parsePrefixExpression);
+        registerPrefix(MINUS, this::parsePrefixExpression);
 
         nextToken();
         nextToken();
@@ -157,6 +162,7 @@ class Parser {
         final PrefixParseFn prefix = prefixParseFns.get(curToken.type());
 
         if (prefix == null) {
+            noPrefixParseFnError(curToken.type());
             return null;
         }
 
@@ -181,5 +187,21 @@ class Parser {
         }
 
         return new IntegerLiteral(curToken, value);
+    }
+
+    private void noPrefixParseFnError(TokenType tokenType) {
+        var message = "no prefix parse function for %s found".formatted(tokenType);
+
+        errors.add(message);
+    }
+
+    private Expression parsePrefixExpression() {
+        var expression = new PrefixExpression(curToken, curToken.literal());
+
+        nextToken();
+
+        expression.setRight(parseExpression(Precedence.PREFIX));
+
+        return expression;
     }
 }

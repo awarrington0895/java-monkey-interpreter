@@ -7,11 +7,15 @@ import java.util.List;
 
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
+import com.warrington.ast.Expression;
 import com.warrington.ast.ExpressionStatement;
 import com.warrington.ast.Identifier;
 import com.warrington.ast.IntegerLiteral;
 import com.warrington.ast.LetStatement;
+import com.warrington.ast.PrefixExpression;
 import com.warrington.ast.Program;
 import com.warrington.ast.ReturnStatement;
 import com.warrington.ast.Statement;
@@ -21,8 +25,36 @@ import com.warrington.token.TokenType;
 
 class ParserTest {
 
+    @ParameterizedTest
+    @CsvSource({"!5;,!,5", "-15;,-,15"})
+    void testParsingPrefixExpressions(String input, String operator, int integerValue) {
+        var lexer = new Lexer(input);
+
+        var parser = new Parser(lexer);
+
+        var program = parser.parseProgram();
+
+        checkParserErrors(parser);
+
+        List<Statement> statements = program.getStatements();
+
+        assertThat(statements.size())
+            .withFailMessage("program.getStatements() does not contain %d statements. got=%d", 1, statements.size())
+            .isEqualTo(1);
+
+        var stmt = (ExpressionStatement) statements.get(0);
+
+        var exp = (PrefixExpression) stmt.getExpression();
+
+        assertThat(exp.operator())
+            .withFailMessage("exp.operator is not '%s'.  got=%s".formatted(operator, exp.operator()))
+            .isEqualTo(operator);
+
+        testIntegerLiteral(exp.right(), integerValue);
+    }
+
     @Test
-    void testIntegerLiteral() {
+    void testIntegerLiteralExpression() {
         final var input = "5;";
 
         final var lexer = new Lexer(input);
@@ -202,6 +234,18 @@ class ParserTest {
             return false;
         }
 
+    }
+
+    void testIntegerLiteral(Expression intLiteralExpression, int value) {
+        var intLiteral = (IntegerLiteral) intLiteralExpression;
+
+        assertThat(intLiteral.value())
+            .withFailMessage("intL.value() not %d. got=%d", value, intLiteral.value())
+            .isEqualTo(value);
+
+       assertThat(intLiteral.tokenLiteral())
+            .withFailMessage("integerLiteral.tokenLiteral() not %d.  got=%s", value, intLiteral.tokenLiteral())
+            .isEqualTo(String.valueOf(value)); 
     }
 
     void checkParserErrors(Parser parser) {
