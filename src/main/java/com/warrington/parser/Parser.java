@@ -3,11 +3,18 @@ package com.warrington.parser;
 import com.warrington.ast.Expression;
 import com.warrington.ast.ExpressionStatement;
 
+import static com.warrington.token.TokenType.ASTERISK;
 import static com.warrington.token.TokenType.BANG;
+import static com.warrington.token.TokenType.EQ;
 import static com.warrington.token.TokenType.IDENT;
 import static com.warrington.token.TokenType.INT;
 import static com.warrington.token.TokenType.MINUS;
+import static com.warrington.token.TokenType.NOT_EQ;
+import static com.warrington.token.TokenType.PLUS;
 import static com.warrington.token.TokenType.SEMICOLON;
+import static com.warrington.token.TokenType.SLASH;
+import static com.warrington.token.TokenType.LT;
+import static com.warrington.token.TokenType.GT;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.warrington.ast.Identifier;
+import com.warrington.ast.InfixExpression;
 import com.warrington.ast.IntegerLiteral;
 import com.warrington.ast.LetStatement;
 import com.warrington.ast.PrefixExpression;
@@ -26,6 +34,17 @@ import com.warrington.token.Token;
 import com.warrington.token.TokenType;
 
 class Parser {
+    private static final Map<TokenType, Precedence> precedences = Map.of(
+        EQ,       Precedence.EQUALS,
+        NOT_EQ,   Precedence.EQUALS,
+        LT,       Precedence.LESSGREATER,
+        GT,       Precedence.LESSGREATER,
+        PLUS,     Precedence.SUM,
+        MINUS,    Precedence.SUM,
+        SLASH,    Precedence.PRODUCT,
+        ASTERISK, Precedence.PRODUCT
+    );
+
     private Lexer lexer;
     private List<String> errors = new ArrayList<>();
 
@@ -45,6 +64,15 @@ class Parser {
         registerPrefix(INT, this::parseIntegerLiteral);
         registerPrefix(BANG, this::parsePrefixExpression);
         registerPrefix(MINUS, this::parsePrefixExpression);
+
+        registerInfix(PLUS, this::parseInfixExpression);
+        registerInfix(MINUS, this::parseInfixExpression);
+        registerInfix(SLASH, this::parseInfixExpression);
+        registerInfix(ASTERISK, this::parseInfixExpression);
+        registerInfix(EQ, this::parseInfixExpression);
+        registerInfix(NOT_EQ, this::parseInfixExpression);
+        registerInfix(LT, this::parseInfixExpression);
+        registerInfix(GT, this::parseInfixExpression);
 
         nextToken();
         nextToken();
@@ -79,6 +107,14 @@ class Parser {
         final var message = "expected next token to be %s, got %s".formatted(tokenType, peekToken.type());
 
         errors.add(message);
+    }
+
+    private Precedence peekPrecedence() {
+        return precedences.getOrDefault(peekToken.type(), Precedence.LOWEST);
+    }
+
+    private Precedence curPrecedence() {
+        return precedences.getOrDefault(curToken.type(), Precedence.LOWEST);
     }
 
     private Statement parseStatement() {
@@ -166,7 +202,19 @@ class Parser {
             return null;
         }
 
-        final var leftExpression = prefix.get();
+        Expression leftExpression = prefix.get();
+
+        while (!peekTokenIs(SEMICOLON) && precedence.ordinal() < peekPrecedence().ordinal()) {
+            InfixParseFn infix = infixParseFns.get(peekToken.type());
+
+            if (infix == null) {
+                return leftExpression;
+            }
+
+            nextToken();
+
+            leftExpression = infix.apply(leftExpression);
+        }
 
         return leftExpression;
     }
@@ -201,6 +249,18 @@ class Parser {
         nextToken();
 
         expression.setRight(parseExpression(Precedence.PREFIX));
+
+        return expression;
+    }
+
+    private Expression parseInfixExpression(Expression left) {
+        var expression = new InfixExpression(curToken, curToken.literal(), left);
+
+        Precedence precedence = curPrecedence();
+
+        nextToken();
+
+        expression.setRight(parseExpression(precedence));
 
         return expression;
     }

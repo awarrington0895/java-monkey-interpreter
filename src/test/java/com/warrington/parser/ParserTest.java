@@ -13,6 +13,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import com.warrington.ast.Expression;
 import com.warrington.ast.ExpressionStatement;
 import com.warrington.ast.Identifier;
+import com.warrington.ast.InfixExpression;
 import com.warrington.ast.IntegerLiteral;
 import com.warrington.ast.LetStatement;
 import com.warrington.ast.PrefixExpression;
@@ -24,6 +25,45 @@ import com.warrington.token.Token;
 import com.warrington.token.TokenType;
 
 class ParserTest {
+
+    @ParameterizedTest
+    @CsvSource({
+        "5 + 5,5,+,5",
+        "5 - 5,5,-,5",
+        "5 * 5,5,*,5",
+        "5 / 5,5,/,5",
+        "5 > 5,5,>,5",
+        "5 < 5,5,<,5",
+        "5 == 5,5,==,5",
+        "5 != 5,5,!=,5",
+    })
+    void testParsingInfixExpressions(String input, int left, String operator, int right) {
+        var lexer = new Lexer(input);
+        
+        var parser = new Parser(lexer);
+
+        Program program = parser.parseProgram();
+
+        checkParserErrors(parser);
+
+        List<Statement> statements = program.getStatements();
+
+        assertThat(statements.size())
+            .withFailMessage("program does not contain %d statements. got=%d", 1, statements.size())
+            .isEqualTo(1);
+        
+        ExpressionStatement stmt = (ExpressionStatement) statements.get(0);
+
+        InfixExpression expression = (InfixExpression) stmt.getExpression();        
+        
+        testIntegerLiteral(expression.left(), left);
+
+        assertThat(expression.operator())
+            .withFailMessage("exp.operator() is not '%s'. got=%s", operator, expression.operator())
+            .isEqualTo(operator);
+
+        testIntegerLiteral(expression.right(), left);
+    }
 
     @ParameterizedTest
     @CsvSource({"!5;,!,5", "-15;,-,15"})
