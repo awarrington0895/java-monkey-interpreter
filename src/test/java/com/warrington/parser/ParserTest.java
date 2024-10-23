@@ -28,6 +28,36 @@ class ParserTest {
 
     @ParameterizedTest
     @CsvSource({
+        "-a * b,((-a) * b)",
+        "!-a,(!(-a))",
+        "a + b + c,((a + b) + c)",
+        "a + b - c,((a + b) - c)",
+        "a * b * c,((a * b) * c)",
+        "a * b / c,((a * b) / c)",
+        "a + b / c,(a + (b / c))",
+        "a + b * c + d / e - f,(((a + (b * c)) + (d / e)) - f)",
+        "3 + 4; -5 * 5,(3 + 4)((-5) * 5)",
+        "5 > 4 == 3 < 4,((5 > 4) == (3 < 4))",
+        "5 < 4 != 3 > 4,((5 < 4) != (3 > 4))",
+        "3 + 4 * 5 == 3 * 1 + 4 * 5,((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"
+
+    })
+    void testOperatorPrecedenceParsing(String input, String expected) {
+
+        var parser = new Parser(new Lexer(input));
+
+        Program program = parser.parseProgram();
+
+        checkParserErrors(parser);
+
+        var actual = program.toString();
+
+        assertThat(actual)
+            .isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
         "5 + 5,5,+,5",
         "5 - 5,5,-,5",
         "5 * 5,5,*,5",
