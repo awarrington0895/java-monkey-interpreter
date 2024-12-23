@@ -3,11 +3,11 @@ package com.warrington.monkey.parser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
 import com.warrington.monkey.ast.*;
-import com.warrington.monkey.parser.Parser;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -206,6 +206,86 @@ class ParserTest {
         var alternative = (ExpressionStatement) ifExpression.alternative().statements().getFirst();
 
         testIdentifier(alternative.getExpression(), "y");
+    }
+
+    @Test
+    void testParsingFunctionLiteral() {
+        final var input = "fn(x, y) { x + y; }";
+
+        final var lexer = new Lexer(input);
+
+        final var parser = new Parser(lexer);
+
+        final Program program = parser.parseProgram();
+
+        checkParserErrors(parser);
+
+        final List<Statement> statements = program.getStatements();
+
+        assertThat(statements.size())
+            .withFailMessage("program has not enough statements. got=%d", statements.size())
+            .isEqualTo(1);
+
+        final ExpressionStatement stmt = (ExpressionStatement) statements.getFirst();
+
+        var functionLiteral = (FunctionLiteral) stmt.getExpression();
+
+        assertThat(functionLiteral.parameters().size())
+            .withFailMessage("function literal parameters wrong. want 2. got=%d", functionLiteral.parameters().size())
+            .isEqualTo(2);
+
+        testIdentifier(functionLiteral.parameters().getFirst(), "x");
+        testIdentifier(functionLiteral.parameters().get(1), "y");
+
+        int bodySize = functionLiteral.body().statements().size();
+
+        assertThat(bodySize)
+            .withFailMessage("body statements has not 1 statements. got=%d", bodySize)
+            .isEqualTo(1);
+
+        var bodyStatement = (ExpressionStatement) functionLiteral.body().statements().getFirst();
+
+        testInfixExpression(bodyStatement.getExpression(), "x", "+", "y");
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideFunctionParameters")
+    void testParsingFunctionParameters(String input, List<String> expectedParameters) {
+        final var lexer = new Lexer(input);
+
+        final var parser = new Parser(lexer);
+
+        final Program program = parser.parseProgram();
+
+        checkParserErrors(parser);
+
+        final List<Statement> statements = program.getStatements();
+
+        assertThat(statements.size())
+            .withFailMessage("program has not enough statements. got=%d", statements.size())
+            .isEqualTo(1);
+
+        final ExpressionStatement stmt = (ExpressionStatement) statements.getFirst();
+
+        var functionLiteral = (FunctionLiteral) stmt.getExpression();
+
+        List<Identifier> parameters = functionLiteral.parameters();
+
+        assertThat(parameters.size())
+            .withFailMessage("length parameters wrong. want %d, got=%d", expectedParameters.size(), parameters.size())
+            .isEqualTo(expectedParameters.size());
+
+        for (int i = 0; i < parameters.size(); i++) {
+            testLiteralExpression(parameters.get(i), expectedParameters.get(i));
+        }
+    }
+
+    private static Stream<Arguments> provideFunctionParameters() {
+        return Stream.of(
+            Arguments.of("fn() {};", Collections.emptyList()),
+            Arguments.of("fn(x) {};", List.of("x")),
+            Arguments.of("fn(x, y, z) {};", List.of("x", "y", "z"))
+        );
     }
 
     @Test

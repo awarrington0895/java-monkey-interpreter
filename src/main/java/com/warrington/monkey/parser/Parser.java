@@ -12,13 +12,13 @@ import static com.warrington.monkey.token.TokenType.*;
 
 class Parser {
     private static final Map<TokenType, Precedence> precedences = Map.of(
-        EQ,       Precedence.EQUALS,
-        NOT_EQ,   Precedence.EQUALS,
-        LT,       Precedence.LESSGREATER,
-        GT,       Precedence.LESSGREATER,
-        PLUS,     Precedence.SUM,
-        MINUS,    Precedence.SUM,
-        SLASH,    Precedence.PRODUCT,
+        EQ, Precedence.EQUALS,
+        NOT_EQ, Precedence.EQUALS,
+        LT, Precedence.LESSGREATER,
+        GT, Precedence.LESSGREATER,
+        PLUS, Precedence.SUM,
+        MINUS, Precedence.SUM,
+        SLASH, Precedence.PRODUCT,
         ASTERISK, Precedence.PRODUCT
     );
 
@@ -45,6 +45,7 @@ class Parser {
         registerPrefix(FALSE, this::parseBoolean);
         registerPrefix(LPAREN, this::parseGroupedExpression);
         registerPrefix(IF, this::parseIfExpression);
+        registerPrefix(FUNCTION, this::parseFunctionLiteral);
 
         registerInfix(PLUS, this::parseInfixExpression);
         registerInfix(MINUS, this::parseInfixExpression);
@@ -250,7 +251,59 @@ class Parser {
         return expression;
     }
 
+    private Expression parseFunctionLiteral() {
+        final var startToken = curToken;
+
+        assert curTokenIs(FUNCTION) : "Functions should start with 'fn'. got='%s'".formatted(curToken.literal());
+
+        if (!expectPeek(LPAREN)) {
+            return null;
+        }
+
+        List<Identifier> parameters = parseFunctionParameters();
+
+        if (!expectPeek(LSQUIRLY)) {
+            return null;
+        }
+
+        BlockStatement body = parseBlockStatement();
+
+        return new FunctionLiteral(startToken, parameters, body);
+    }
+
+    private List<Identifier> parseFunctionParameters() {
+        assert curTokenIs(LPAREN) : "Function parameters should start with '('. got='%s'".formatted(curToken.literal());
+
+        var parameters = new ArrayList<Identifier>();
+
+        if (peekTokenIs(RPAREN)) {
+            nextToken();
+            return parameters;
+        }
+
+        nextToken();
+
+        var param = new Identifier(curToken, curToken.literal());
+        parameters.add(param);
+
+        while (peekTokenIs(COMMA)) {
+            nextToken();
+            nextToken();
+
+            var nextParam = new Identifier(curToken, curToken.literal());
+            parameters.add(nextParam);
+        }
+
+        if (!expectPeek(RPAREN)) {
+            return null;
+        }
+
+        return parameters;
+    }
+
     private Expression parseIfExpression() {
+        assert curTokenIs(IF) : "If expressions should start with 'if'. got='%s'".formatted(curToken.literal());
+
         final var ifToken = curToken;
 
         if (!expectPeek(LPAREN)) {
@@ -279,7 +332,7 @@ class Parser {
                 return null;
             }
 
-           alternative = parseBlockStatement();
+            alternative = parseBlockStatement();
         }
 
         return new IfExpression(ifToken, condition, consequence, alternative);
