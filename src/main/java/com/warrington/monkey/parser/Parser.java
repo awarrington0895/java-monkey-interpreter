@@ -252,9 +252,9 @@ class Parser {
     }
 
     private Expression parseFunctionLiteral() {
-        final var startToken = curToken;
-
         assert curTokenIs(FUNCTION) : "Functions should start with 'fn'. got='%s'".formatted(curToken.literal());
+
+        final var startToken = curToken;
 
         if (!expectPeek(LPAREN)) {
             return null;
@@ -339,6 +339,7 @@ class Parser {
     }
 
     private BlockStatement parseBlockStatement() {
+        assert curTokenIs(LSQUIRLY) : "Block statements should start with '{'. got='%s'".formatted(curToken.literal());
         final var startToken = curToken;
 
         var statements = new ArrayList<Statement>();
