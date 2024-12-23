@@ -33,7 +33,7 @@ public enum TokenType {
     ELSE("ELSE"),
     RETURN("RETURN");
 
-    public String literalValue;
+    public final String literalValue;
 
     public static TokenType lookupIdent(String ident) {
         return keywords.getOrDefault(ident, IDENT);

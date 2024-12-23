@@ -164,6 +164,89 @@ class ParserTest {
     }
 
     @Test
+    void testIfElseExpression() {
+        final var input = "if (x < y) { x } else { y }";
+
+        final var lexer = new Lexer(input);
+
+        final var parser = new Parser(lexer);
+
+        final Program program = parser.parseProgram();
+
+        checkParserErrors(parser);
+
+        final List<Statement> statements = program.getStatements();
+
+        assertThat(statements.size())
+            .withFailMessage("program has not enough statements. got=%d", statements.size())
+            .isEqualTo(1);
+
+        final ExpressionStatement stmt = (ExpressionStatement) statements.getFirst();
+
+        final IfExpression ifExpression = (IfExpression) stmt.getExpression();
+
+        testInfixExpression(ifExpression.condition(), "x", "<", "y");
+
+        var consequenceSize = ifExpression.consequence().statements().size();
+
+        assertThat(consequenceSize)
+            .withFailMessage("consequence is not 1 statements. got=%d.", consequenceSize)
+            .isEqualTo(1);
+
+        var consequence = (ExpressionStatement) ifExpression.consequence().statements().getFirst();
+
+        testIdentifier(consequence.getExpression(), "x");
+
+        var alternativeSize = ifExpression.alternative().statements().size();
+
+        assertThat(consequenceSize)
+            .withFailMessage("alternative is not 1 statements. got=%d.", alternativeSize)
+            .isEqualTo(1);
+
+        var alternative = (ExpressionStatement) ifExpression.alternative().statements().getFirst();
+
+        testIdentifier(alternative.getExpression(), "y");
+    }
+
+    @Test
+    void testIfExpression() {
+        final var input = "if (x < y) { x }";
+
+        final var lexer = new Lexer(input);
+
+        final var parser = new Parser(lexer);
+
+        final Program program = parser.parseProgram();
+
+        checkParserErrors(parser);
+
+        final List<Statement> statements = program.getStatements();
+
+        assertThat(statements.size())
+            .withFailMessage("program has not enough statements. got=%d", statements.size())
+            .isEqualTo(1);
+
+        final ExpressionStatement stmt = (ExpressionStatement) statements.getFirst();
+
+        final IfExpression ifExpression = (IfExpression) stmt.getExpression();
+
+        testInfixExpression(ifExpression.condition(), "x", "<", "y");
+
+        var consequenceSize = ifExpression.consequence().statements().size();
+
+        assertThat(consequenceSize)
+            .withFailMessage("consequence is not 1 statements. got=%d.", consequenceSize)
+            .isEqualTo(1);
+
+        var consequence = (ExpressionStatement) ifExpression.consequence().statements().getFirst();
+
+        testIdentifier(consequence.getExpression(), "x");
+
+        assertThat(ifExpression.alternative())
+            .isNull();
+    }
+
+    @Test
     void testIdentifierExpression() {
         final var input = "foobar;";
 

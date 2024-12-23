@@ -2,10 +2,7 @@ package com.warrington.monkey.parser;
 
 import com.warrington.monkey.ast.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.warrington.monkey.lexer.Lexer;
 import com.warrington.monkey.token.Token;
@@ -47,6 +44,7 @@ class Parser {
         registerPrefix(TRUE, this::parseBoolean);
         registerPrefix(FALSE, this::parseBoolean);
         registerPrefix(LPAREN, this::parseGroupedExpression);
+        registerPrefix(IF, this::parseIfExpression);
 
         registerInfix(PLUS, this::parseInfixExpression);
         registerInfix(MINUS, this::parseInfixExpression);
@@ -250,6 +248,61 @@ class Parser {
         expression.setRight(parseExpression(Precedence.PREFIX));
 
         return expression;
+    }
+
+    private Expression parseIfExpression() {
+        final var ifToken = curToken;
+
+        if (!expectPeek(LPAREN)) {
+            return null;
+        }
+
+        nextToken();
+
+        Expression condition = parseExpression(Precedence.LOWEST);
+
+        if (!expectPeek(RPAREN)) {
+            return null;
+        }
+
+        if (!expectPeek(LSQUIRLY)) {
+            return null;
+        }
+
+        BlockStatement consequence = parseBlockStatement();
+
+        BlockStatement alternative = null;
+        if (peekTokenIs(ELSE)) {
+            nextToken();
+
+            if (!expectPeek(LSQUIRLY)) {
+                return null;
+            }
+
+           alternative = parseBlockStatement();
+        }
+
+        return new IfExpression(ifToken, condition, consequence, alternative);
+    }
+
+    private BlockStatement parseBlockStatement() {
+        final var startToken = curToken;
+
+        var statements = new ArrayList<Statement>();
+
+        nextToken();
+
+        while (!curTokenIs(RSQUIRLY) && !curTokenIs(EOF)) {
+            Statement stmt = parseStatement();
+
+            if (stmt != null) {
+                statements.add(stmt);
+            }
+
+            nextToken();
+        }
+
+        return new BlockStatement(startToken, statements);
     }
 
     private Expression parseInfixExpression(Expression left) {
