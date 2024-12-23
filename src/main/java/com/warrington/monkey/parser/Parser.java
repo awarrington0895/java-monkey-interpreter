@@ -46,6 +46,7 @@ class Parser {
         registerPrefix(MINUS, this::parsePrefixExpression);
         registerPrefix(TRUE, this::parseBoolean);
         registerPrefix(FALSE, this::parseBoolean);
+        registerPrefix(LPAREN, this::parseGroupedExpression);
 
         registerInfix(PLUS, this::parseInfixExpression);
         registerInfix(MINUS, this::parseInfixExpression);
@@ -126,6 +127,18 @@ class Parser {
         }
 
         return stmt;
+    }
+
+    private Expression parseGroupedExpression() {
+        nextToken();
+
+        Expression exp = parseExpression(Precedence.LOWEST);
+
+        if (!expectPeek(RPAREN)) {
+            return null;
+        }
+
+        return exp;
     }
 
     private Expression parseBoolean() {
