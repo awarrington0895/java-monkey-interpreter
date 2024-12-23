@@ -69,7 +69,7 @@ class ParserTest {
     })
     void testParsingInfixExpressions(String input, int left, String operator, int right) {
         var lexer = new Lexer(input);
-        
+
         var parser = new Parser(lexer);
 
         Program program = parser.parseProgram();
@@ -81,18 +81,10 @@ class ParserTest {
         assertThat(statements.size())
             .withFailMessage("program does not contain %d statements. got=%d", 1, statements.size())
             .isEqualTo(1);
-        
-        ExpressionStatement stmt = (ExpressionStatement) statements.get(0);
 
-        InfixExpression expression = (InfixExpression) stmt.getExpression();        
-        
-        testIntegerLiteral(expression.left(), left);
+        ExpressionStatement stmt = (ExpressionStatement) statements.getFirst();
 
-        assertThat(expression.operator())
-            .withFailMessage("exp.operator() is not '%s'. got=%s", operator, expression.operator())
-            .isEqualTo(operator);
-
-        testIntegerLiteral(expression.right(), left);
+        testInfixExpression(stmt.getExpression(), left, operator, right);
     }
 
     @ParameterizedTest
@@ -112,7 +104,7 @@ class ParserTest {
             .withFailMessage("program.getStatements() does not contain %d statements. got=%d", 1, statements.size())
             .isEqualTo(1);
 
-        var stmt = (ExpressionStatement) statements.get(0);
+        var stmt = (ExpressionStatement) statements.getFirst();
 
         var exp = (PrefixExpression) stmt.getExpression();
 
@@ -141,7 +133,7 @@ class ParserTest {
             .withFailMessage("program has not enough statements. got=%d", statements.size())
             .isEqualTo(1);
 
-        final ExpressionStatement stmt = (ExpressionStatement) statements.get(0);
+        final ExpressionStatement stmt = (ExpressionStatement) statements.getFirst();
 
         final var literal = (IntegerLiteral) stmt.getExpression();
 
@@ -172,26 +164,18 @@ class ParserTest {
             .withFailMessage("program has not enough statements. got=%d", statements.size())
             .isEqualTo(1);
 
-        final ExpressionStatement stmt = (ExpressionStatement) statements.get(0);
+        final ExpressionStatement stmt = (ExpressionStatement) statements.getFirst();
 
-        final var ident = (Identifier) stmt.getExpression();
-
-        assertThat(ident.value())
-            .withFailMessage("ident.getValue() not %s. got=%s", "foobar", ident.value())
-            .isEqualTo("foobar");
-
-        assertThat(ident.tokenLiteral())
-            .withFailMessage("ident.tokenLiteral() not %s. got=%s", "foobar", ident.tokenLiteral())
-            .isEqualTo("foobar");
+        testIdentifier(stmt.getExpression(), "foobar");
     }
 
     @Test
     void testLetStatements() {
         final var input = """
-                let x = 5;
-                let y = 10;
-                let foobar = 838383;
-                """;
+            let x = 5;
+            let y = 10;
+            let foobar = 838383;
+            """;
 
         final var lexer = new Lexer(input);
 
@@ -207,13 +191,13 @@ class ParserTest {
 
         if (program.getStatements().size() != 3) {
             fail("program.getStatements() does not contain 3 statements. got=%d"
-                    .formatted(program.getStatements().size()));
+                .formatted(program.getStatements().size()));
         }
 
         final var expectedIdentifiers = List.of(
-                "x",
-                "y",
-                "foobar");
+            "x",
+            "y",
+            "foobar");
 
         for (int i = 0; i < expectedIdentifiers.size(); i++) {
             final var statement = program.getStatements().get(i);
@@ -247,10 +231,10 @@ class ParserTest {
     @Test
     void testReturnStatements() {
         final var input = """
-                return 5;
-                return 10;
-                return 993322;
-                """;
+            return 5;
+            return 10;
+            return 993322;
+            """;
 
         final var lexer = new Lexer(input);
 
@@ -266,7 +250,7 @@ class ParserTest {
 
         if (program.getStatements().size() != 3) {
             fail("program.getStatements() does not contain 3 statements. got=%d"
-                    .formatted(program.getStatements().size()));
+                .formatted(program.getStatements().size()));
         }
 
         program.getStatements().forEach(statement -> {
@@ -278,6 +262,34 @@ class ParserTest {
                 fail("statement is not a ReturnStatement");
             }
         });
+    }
+
+    void testLiteralExpression(
+        Expression expression,
+        Object expected
+    ) {
+        switch (expected) {
+            case Integer i -> testIntegerLiteral(expression, i);
+            case String s -> testIdentifier(expression, s);
+            default -> fail("type of expression not handled! got=%s".formatted(expected.getClass()));
+        }
+    }
+
+    void testInfixExpression(
+        Expression expression,
+        Object left,
+        String operator,
+        Object right
+    ) {
+        InfixExpression opExp = (InfixExpression) expression;
+
+        testLiteralExpression(opExp.left(), left);
+
+        assertThat(opExp.operator())
+            .withFailMessage("opExp.operator() is not '%s'. got=%s", operator, opExp.operator())
+            .isEqualTo(operator);
+
+        testLiteralExpression(opExp.right(), right);
     }
 
     boolean testLetStatement(Statement statement, String name) {
@@ -294,7 +306,7 @@ class ParserTest {
 
             if (!letStmt.getName().tokenLiteral().equals(name)) {
                 fail("letStmt.getName().tokenLiteral() not '%s'. got=%s".formatted(name,
-                        letStmt.getName().tokenLiteral()));
+                    letStmt.getName().tokenLiteral()));
                 return false;
             }
 
@@ -306,6 +318,18 @@ class ParserTest {
 
     }
 
+    void testIdentifier(Expression expression, String value) {
+        var ident = (Identifier) expression;
+
+        assertThat(ident.value())
+            .withFailMessage("ident.value() not %s. got %s", value, ident.value())
+            .isEqualTo(value);
+
+        assertThat(ident.tokenLiteral())
+            .withFailMessage("ident.tokenLiteral() not %s. got %s", value, ident.tokenLiteral())
+            .isEqualTo(value);
+    }
+
     void testIntegerLiteral(Expression intLiteralExpression, int value) {
         var intLiteral = (IntegerLiteral) intLiteralExpression;
 
@@ -313,9 +337,9 @@ class ParserTest {
             .withFailMessage("intL.value() not %d. got=%d", value, intLiteral.value())
             .isEqualTo(value);
 
-       assertThat(intLiteral.tokenLiteral())
+        assertThat(intLiteral.tokenLiteral())
             .withFailMessage("integerLiteral.tokenLiteral() not %d.  got=%s", value, intLiteral.tokenLiteral())
-            .isEqualTo(String.valueOf(value)); 
+            .isEqualTo(String.valueOf(value));
     }
 
     void checkParserErrors(Parser parser) {
@@ -323,7 +347,7 @@ class ParserTest {
 
         final List<String> errors = parser.errors();
 
-        if (errors.size() == 0) {
+        if (errors.isEmpty()) {
             return;
         }
 

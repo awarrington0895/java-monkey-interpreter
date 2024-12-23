@@ -15,6 +15,8 @@ public class ReturnStatement implements Statement {
         return token.literal();
     }
 
+    public Expression returnValue() { return returnValue; }
+
     @Override
     public String toString() {
         final var builder = new StringBuilder();
