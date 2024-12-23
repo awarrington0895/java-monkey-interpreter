@@ -1,4 +1,4 @@
-package com.warrington.ast;
+package com.warrington.monkey.ast;
 
 interface Node {
     String tokenLiteral();

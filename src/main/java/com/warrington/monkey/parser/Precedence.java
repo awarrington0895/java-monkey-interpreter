@@ -1,4 +1,4 @@
-package com.warrington.parser;
+package com.warrington.monkey.parser;
 
 enum Precedence {
     LOWEST,

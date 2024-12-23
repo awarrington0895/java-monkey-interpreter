@@ -1,7 +1,7 @@
-package com.warrington.parser;
+package com.warrington.monkey.parser;
 
 import java.util.function.Supplier;
 
-import com.warrington.ast.Expression;
+import com.warrington.monkey.ast.Expression;
 
 interface PrefixParseFn extends Supplier<Expression> {}

@@ -1,10 +1,10 @@
-package com.warrington.repl;
+package com.warrington.monkey.repl;
 
 import java.util.Scanner;
 
-import com.warrington.lexer.Lexer;
-import com.warrington.token.Token;
-import com.warrington.token.TokenType;
+import com.warrington.monkey.lexer.Lexer;
+import com.warrington.monkey.token.Token;
+import com.warrington.monkey.token.TokenType;
 
 public class Repl {
     private static final String PROMPT = ">> ";

@@ -1,4 +1,4 @@
-package com.warrington.token;
+package com.warrington.monkey.token;
 
 public record Token(TokenType type, String literal) {
     public Token(TokenType type, char literal) {

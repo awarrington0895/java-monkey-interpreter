@@ -1,6 +1,6 @@
 package com.warrington;
 
-import com.warrington.repl.Repl;
+import com.warrington.monkey.repl.Repl;
 
 class Main {
     public static void main(String[] args) {

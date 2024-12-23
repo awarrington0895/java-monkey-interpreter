@@ -1,28 +1,23 @@
-package com.warrington.parser;
+package com.warrington.monkey.parser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
+import java.util.stream.Stream;
 
+import com.warrington.monkey.ast.*;
+import com.warrington.monkey.parser.Parser;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import com.warrington.ast.Expression;
-import com.warrington.ast.ExpressionStatement;
-import com.warrington.ast.Identifier;
-import com.warrington.ast.InfixExpression;
-import com.warrington.ast.IntegerLiteral;
-import com.warrington.ast.LetStatement;
-import com.warrington.ast.PrefixExpression;
-import com.warrington.ast.Program;
-import com.warrington.ast.ReturnStatement;
-import com.warrington.ast.Statement;
-import com.warrington.lexer.Lexer;
-import com.warrington.token.Token;
-import com.warrington.token.TokenType;
+import com.warrington.monkey.lexer.Lexer;
+import com.warrington.monkey.token.Token;
+import com.warrington.monkey.token.TokenType;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class ParserTest {
 
@@ -56,18 +51,27 @@ class ParserTest {
             .isEqualTo(expected);
     }
 
+    private static Stream<Arguments> provideInfixExpressions() {
+        return Stream.of(
+            Arguments.of("5 + 5", 5, "+", 5),
+            Arguments.of("5 - 5", 5, "-", 5),
+            Arguments.of("5 * 5", 5, "*", 5),
+            Arguments.of("5 / 5", 5, "/", 5),
+            Arguments.of("5 > 5", 5, ">", 5),
+            Arguments.of("5 < 5", 5, "<", 5),
+            Arguments.of("5 == 5", 5, "==", 5),
+            Arguments.of("5 != 5", 5, "!=", 5),
+            Arguments.of("true == true", true, "==", true),
+            Arguments.of("true != false", true, "!=", false),
+            Arguments.of("false == false", false, "==", false)
+        );
+    }
+
+
+
     @ParameterizedTest
-    @CsvSource({
-        "5 + 5,5,+,5",
-        "5 - 5,5,-,5",
-        "5 * 5,5,*,5",
-        "5 / 5,5,/,5",
-        "5 > 5,5,>,5",
-        "5 < 5,5,<,5",
-        "5 == 5,5,==,5",
-        "5 != 5,5,!=,5",
-    })
-    void testParsingInfixExpressions(String input, int left, String operator, int right) {
+    @MethodSource("provideInfixExpressions")
+    void testParsingInfixExpressions(String input, Object left, String operator, Object right) {
         var lexer = new Lexer(input);
 
         var parser = new Parser(lexer);
@@ -87,9 +91,18 @@ class ParserTest {
         testInfixExpression(stmt.getExpression(), left, operator, right);
     }
 
+    private static Stream<Arguments> providePrefixExpressions() {
+        return Stream.of(
+            Arguments.of("!5;", "!", 5),
+            Arguments.of("-15;", "-", 15),
+            Arguments.of("!true;", "!", true),
+            Arguments.of("!false;", "!", false)
+        );
+    }
+
     @ParameterizedTest
-    @CsvSource({"!5;,!,5", "-15;,-,15"})
-    void testParsingPrefixExpressions(String input, String operator, int integerValue) {
+    @MethodSource("providePrefixExpressions")
+    void testParsingPrefixExpressions(String input, String operator, Object value) {
         var lexer = new Lexer(input);
 
         var parser = new Parser(lexer);
@@ -112,7 +125,7 @@ class ParserTest {
             .withFailMessage("exp.operator is not '%s'.  got=%s".formatted(operator, exp.operator()))
             .isEqualTo(operator);
 
-        testIntegerLiteral(exp.right(), integerValue);
+        testLiteralExpression(exp.right(), value);
     }
 
     @Test
@@ -167,6 +180,29 @@ class ParserTest {
         final ExpressionStatement stmt = (ExpressionStatement) statements.getFirst();
 
         testIdentifier(stmt.getExpression(), "foobar");
+    }
+
+    @Test
+    void testBooleanExpression() {
+        final var input = "true;";
+
+        final var lexer = new Lexer(input);
+
+        final var parser = new Parser(lexer);
+
+        final Program program = parser.parseProgram();
+
+        checkParserErrors(parser);
+
+        final List<Statement> statements = program.getStatements();
+
+        assertThat(statements.size())
+            .withFailMessage("program has not enough statements. got=%d", statements.size())
+            .isEqualTo(1);
+
+        final ExpressionStatement stmt = (ExpressionStatement) statements.getFirst();
+
+        testLiteralExpression(stmt.getExpression(), true);
     }
 
     @Test
@@ -271,6 +307,7 @@ class ParserTest {
         switch (expected) {
             case Integer i -> testIntegerLiteral(expression, i);
             case String s -> testIdentifier(expression, s);
+            case Boolean b -> testBoolean(expression, b);
             default -> fail("type of expression not handled! got=%s".formatted(expected.getClass()));
         }
     }
@@ -316,6 +353,18 @@ class ParserTest {
             return false;
         }
 
+    }
+
+    void testBoolean(Expression expression, boolean value) {
+        var bool = (MonkeyBoolean) expression;
+
+        assertThat(bool.value())
+            .withFailMessage("bool.value() not %s. got %s", value, bool.value())
+            .isEqualTo(value);
+
+        assertThat(bool.tokenLiteral())
+            .withFailMessage("bool.tokenLiteral() not %s. got %s", value, bool.tokenLiteral())
+            .isEqualTo("%s".formatted(value));
     }
 
     void testIdentifier(Expression expression, String value) {

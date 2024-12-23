@@ -1,4 +1,4 @@
-package com.warrington.token;
+package com.warrington.monkey.token;
 
 import java.util.Map;
 

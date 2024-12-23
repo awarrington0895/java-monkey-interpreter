@@ -1,37 +1,17 @@
-package com.warrington.parser;
+package com.warrington.monkey.parser;
 
-import com.warrington.ast.Expression;
-import com.warrington.ast.ExpressionStatement;
-
-import static com.warrington.token.TokenType.ASTERISK;
-import static com.warrington.token.TokenType.BANG;
-import static com.warrington.token.TokenType.EQ;
-import static com.warrington.token.TokenType.IDENT;
-import static com.warrington.token.TokenType.INT;
-import static com.warrington.token.TokenType.MINUS;
-import static com.warrington.token.TokenType.NOT_EQ;
-import static com.warrington.token.TokenType.PLUS;
-import static com.warrington.token.TokenType.SEMICOLON;
-import static com.warrington.token.TokenType.SLASH;
-import static com.warrington.token.TokenType.LT;
-import static com.warrington.token.TokenType.GT;
+import com.warrington.monkey.ast.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.warrington.ast.Identifier;
-import com.warrington.ast.InfixExpression;
-import com.warrington.ast.IntegerLiteral;
-import com.warrington.ast.LetStatement;
-import com.warrington.ast.PrefixExpression;
-import com.warrington.ast.Program;
-import com.warrington.ast.ReturnStatement;
-import com.warrington.ast.Statement;
-import com.warrington.lexer.Lexer;
-import com.warrington.token.Token;
-import com.warrington.token.TokenType;
+import com.warrington.monkey.lexer.Lexer;
+import com.warrington.monkey.token.Token;
+import com.warrington.monkey.token.TokenType;
+
+import static com.warrington.monkey.token.TokenType.*;
 
 class Parser {
     private static final Map<TokenType, Precedence> precedences = Map.of(
@@ -64,6 +44,8 @@ class Parser {
         registerPrefix(INT, this::parseIntegerLiteral);
         registerPrefix(BANG, this::parsePrefixExpression);
         registerPrefix(MINUS, this::parsePrefixExpression);
+        registerPrefix(TRUE, this::parseBoolean);
+        registerPrefix(FALSE, this::parseBoolean);
 
         registerInfix(PLUS, this::parseInfixExpression);
         registerInfix(MINUS, this::parseInfixExpression);
@@ -86,7 +68,7 @@ class Parser {
     Program parseProgram() {
         final var program = new Program();
 
-        while (curToken.type() != TokenType.EOF) {
+        while (curToken.type() != EOF) {
             Statement stmt = parseStatement();
 
             if (stmt != null) {
@@ -128,22 +110,26 @@ class Parser {
     private Statement parseLetStatement() {
         final var stmt = new LetStatement(curToken);
 
-        if (!expectPeek(TokenType.IDENT)) {
+        if (!expectPeek(IDENT)) {
             return null;
         }
 
         stmt.setName(new Identifier(curToken));
 
-        if (!expectPeek(TokenType.ASSIGN)) {
+        if (!expectPeek(ASSIGN)) {
             return null;
         }
 
         // TODO: We're skipping the expressions until we encounter a semicolon
-        while (!curTokenIs(TokenType.SEMICOLON)) {
+        while (!curTokenIs(SEMICOLON)) {
             nextToken();
         }
 
         return stmt;
+    }
+
+    private Expression parseBoolean() {
+        return new MonkeyBoolean(curToken, curTokenIs(TRUE));
     }
 
     private Statement parseReturnStatement() {
@@ -151,7 +137,7 @@ class Parser {
 
         nextToken();
 
-        while (!curTokenIs(TokenType.SEMICOLON)) {
+        while (!curTokenIs(SEMICOLON)) {
             nextToken();
         }
 
