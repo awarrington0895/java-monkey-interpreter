@@ -14,6 +14,6 @@ class Main {
 
         System.out.println("Feel free to type in commands");
 
-        Repl.start();
+        Repl.startParser();
     }
 }

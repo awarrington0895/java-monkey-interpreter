@@ -10,21 +10,11 @@ import com.warrington.monkey.token.TokenType;
 
 import static com.warrington.monkey.token.TokenType.*;
 
-class Parser {
-    private static final Map<TokenType, Precedence> precedences = Map.of(
-        EQ, Precedence.EQUALS,
-        NOT_EQ, Precedence.EQUALS,
-        LT, Precedence.LESSGREATER,
-        GT, Precedence.LESSGREATER,
-        PLUS, Precedence.SUM,
-        MINUS, Precedence.SUM,
-        SLASH, Precedence.PRODUCT,
-        ASTERISK, Precedence.PRODUCT,
-        LPAREN, Precedence.CALL
-    );
+public class Parser {
+    private static final Map<TokenType, Precedence> precedences = Map.of(EQ, Precedence.EQUALS, NOT_EQ, Precedence.EQUALS, LT, Precedence.LESSGREATER, GT, Precedence.LESSGREATER, PLUS, Precedence.SUM, MINUS, Precedence.SUM, SLASH, Precedence.PRODUCT, ASTERISK, Precedence.PRODUCT, LPAREN, Precedence.CALL);
 
-    private Lexer lexer;
-    private List<String> errors = new ArrayList<>();
+    private final Lexer lexer;
+    private final List<String> errors = new ArrayList<>();
 
     Token curToken;
     Token peekToken;
@@ -67,7 +57,7 @@ class Parser {
         peekToken = lexer.nextToken();
     }
 
-    Program parseProgram() {
+    public Program parseProgram() {
         final var program = new Program();
 
         while (curToken.type() != EOF) {
@@ -83,8 +73,8 @@ class Parser {
         return program;
     }
 
-    List<String> errors() {
-        return this.errors;
+    public List<String> errors() {
+        return List.copyOf(this.errors);
     }
 
     void peekError(TokenType tokenType) {
