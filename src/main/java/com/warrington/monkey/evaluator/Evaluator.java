@@ -3,6 +3,7 @@ package com.warrington.monkey.evaluator;
 import com.warrington.monkey.ast.*;
 import com.warrington.monkey.object.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Evaluator {
@@ -73,8 +74,71 @@ public class Evaluator {
             case IfExpression ifExpression -> evalIfExpression(ifExpression, env);
 
             case Identifier i -> evalIdentifier(i, env);
+            case FunctionLiteral fl -> new MonkeyFunction(fl.parameters(), fl.body(), env);
+            case CallExpression ce -> {
+                MonkeyObject function = eval(ce.function(), env);
+
+                if (isError(function)) {
+                    yield function;
+                }
+
+                List<MonkeyObject> args = evalExpressions(ce.arguments(), env);
+
+                if (args.size() == 1 && isError(args.getFirst())) {
+                    yield args.getFirst();
+                }
+
+                yield applyFunction(function, args);
+            }
             default -> null;
         };
+    }
+
+    private static MonkeyObject applyFunction(MonkeyObject fn, List<MonkeyObject> args) {
+        if (!(fn instanceof MonkeyFunction)) {
+            return newError("not a function: %s", fn.type());
+        }
+
+        MonkeyFunction function = (MonkeyFunction) fn;
+
+        final Environment extendedEnv = extendFunctionEnv(function, args);
+
+        MonkeyObject evaluated = eval(function.body(), extendedEnv);
+
+        return unwrapReturnValue(evaluated);
+    }
+
+    private static MonkeyObject unwrapReturnValue(MonkeyObject object) {
+        return switch (object) {
+            case ReturnValue(MonkeyObject value) -> value;
+            default -> object;
+        };
+    }
+
+    private static Environment extendFunctionEnv(MonkeyFunction fn, List<MonkeyObject> args) {
+        Environment functionScope = fn.env().newEnclosed();
+
+        for (int i = 0; i < fn.parameters().size(); i++) {
+            functionScope.set(fn.parameters().get(i).value(), args.get(i));
+        }
+
+        return functionScope;
+    }
+
+    private static List<MonkeyObject> evalExpressions(List<Expression> exps, Environment env) {
+        final var result = new ArrayList<MonkeyObject>();
+
+        for (Expression exp : exps) {
+            MonkeyObject evaluated = eval(exp, env);
+
+            if (isError(evaluated)) {
+                return List.of(evaluated);
+            }
+
+            result.add(evaluated);
+        }
+
+        return result;
     }
 
     private static boolean isError(MonkeyObject object) {
