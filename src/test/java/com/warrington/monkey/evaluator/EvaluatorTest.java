@@ -33,6 +33,21 @@ class EvaluatorTest {
         testBooleanObject(evaluated, expected);
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        "!false,true",
+        "!true,false",
+        "!5,false",
+        "!!true,true",
+        "!!false,false",
+        "!!5, true"
+    })
+    void testBangOperator(String input, boolean expected) {
+        MonkeyObject evaluated = testEval(input);
+
+        testBooleanObject(evaluated, expected);
+    }
+
     private MonkeyObject testEval(String input) {
         final var lexer = new Lexer(input);
         final var parser = new Parser(lexer);

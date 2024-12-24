@@ -25,6 +25,11 @@ public class Evaluator {
             // Expressions
             case IntegerLiteral il -> new Int(il.value());
             case MonkeyBoolean mb -> nativeBoolToBooleanObject(mb.value());
+            case PrefixExpression pe -> {
+                MonkeyObject right = eval(pe.right());
+
+                yield evalPrefixExpression(pe.operator(), right);
+            }
             default -> null;
         };
     }
@@ -45,5 +50,24 @@ public class Evaluator {
         }
 
         return FALSE;
+    }
+
+    private static MonkeyObject evalPrefixExpression(String operator, MonkeyObject right) {
+        return switch(operator) {
+            case "!" -> evalBangOperatorExpression(right);
+            default -> NULL;
+        };
+    }
+
+    private static MonkeyObject evalBangOperatorExpression(MonkeyObject right) {
+        if (right == TRUE) {
+            return FALSE;
+        } else if (right == FALSE) {
+            return TRUE;
+        } else if (right == NULL) {
+            return TRUE;
+        } else {
+            return FALSE;
+        }
     }
 }
