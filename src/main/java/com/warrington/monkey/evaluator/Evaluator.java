@@ -1,10 +1,7 @@
 package com.warrington.monkey.evaluator;
 
 import com.warrington.monkey.ast.*;
-import com.warrington.monkey.object.Bool;
-import com.warrington.monkey.object.Int;
-import com.warrington.monkey.object.MonkeyObject;
-import com.warrington.monkey.object.Null;
+import com.warrington.monkey.object.*;
 
 import java.util.List;
 
@@ -55,6 +52,14 @@ public class Evaluator {
     private static MonkeyObject evalPrefixExpression(String operator, MonkeyObject right) {
         return switch(operator) {
             case "!" -> evalBangOperatorExpression(right);
+            case "-" -> evalMinusPrefixOperatorExpression(right);
+            default -> NULL;
+        };
+    }
+
+    private static MonkeyObject evalMinusPrefixOperatorExpression(MonkeyObject right) {
+        return switch (right) {
+            case Int i -> new Int(-i.value());
             default -> NULL;
         };
     }

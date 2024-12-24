@@ -16,7 +16,9 @@ class EvaluatorTest {
     @ParameterizedTest
     @CsvSource({
         "5,5",
-        "10,10"
+        "10,10",
+        "-5,-5",
+        "-10,-10"
     })
     void testEvalIntegerExpression(String input, long expected) {
         MonkeyObject evaluated = testEval(input);
