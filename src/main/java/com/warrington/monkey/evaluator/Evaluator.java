@@ -27,12 +27,39 @@ public class Evaluator {
 
                 yield evalPrefixExpression(pe.operator(), right);
             }
+            case InfixExpression ie -> {
+                MonkeyObject left = eval(ie.left());
+                MonkeyObject right = eval(ie.right());
+
+                yield evalInfixExpression(ie.operator(), left, right);
+            }
             default -> null;
         };
     }
 
+    private static MonkeyObject evalInfixExpression(String operator, MonkeyObject left, MonkeyObject right) {
+        if (left.type() == ObjectType.INTEGER && right.type() == ObjectType.INTEGER) {
+            return evalIntegerInfixExpression(operator, (Int) left, (Int) right);
+        }
+
+        return NULL;
+    }
+
+    private static MonkeyObject evalIntegerInfixExpression(String operator, Int left, Int right) {
+        final long leftVal = left.value();
+        final long rightVal = right.value();
+
+        return switch (operator) {
+            case "+" -> new Int(leftVal + rightVal);
+            case "-" -> new Int(leftVal - rightVal);
+            case "/" -> new Int(leftVal / rightVal);
+            case "*" -> new Int(leftVal * rightVal);
+            default -> NULL;
+        };
+    }
+
     private static MonkeyObject evalStatements(List<Statement> statements) {
-       MonkeyObject result = null;
+        MonkeyObject result = null;
 
         for (Statement stmt : statements) {
             result = eval(stmt);
@@ -50,7 +77,7 @@ public class Evaluator {
     }
 
     private static MonkeyObject evalPrefixExpression(String operator, MonkeyObject right) {
-        return switch(operator) {
+        return switch (operator) {
             case "!" -> evalBangOperatorExpression(right);
             case "-" -> evalMinusPrefixOperatorExpression(right);
             default -> NULL;
