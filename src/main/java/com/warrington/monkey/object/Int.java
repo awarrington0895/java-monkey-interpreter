@@ -1,6 +1,11 @@
 package com.warrington.monkey.object;
 
-public record Int(int value) implements MonkeyObject {
+/**
+ * Representation of a 64-bit integer in Monkey
+ *
+ * @param value this is a long since it is intended to be 64 bit
+ */
+public record Int(long value) implements MonkeyObject {
 
     @Override
     public ObjectType type() {

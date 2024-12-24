@@ -1,6 +1,6 @@
 package com.warrington.monkey.ast;
 
-interface Node {
+public interface Node {
     String tokenLiteral();
 
     String toString();

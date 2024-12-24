@@ -1,6 +1,6 @@
 package com.warrington.monkey.object;
 
-interface MonkeyObject {
+public interface MonkeyObject {
     ObjectType type();
     String inspect();
 }
