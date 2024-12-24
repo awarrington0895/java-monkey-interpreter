@@ -15,7 +15,6 @@ import java.util.stream.Stream;
 
 import static com.warrington.monkey.evaluator.Evaluator.NULL;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class EvaluatorTest {
 
@@ -102,6 +101,35 @@ class EvaluatorTest {
        } else {
            testIntegerObject(evaluated, expected);
        }
+    }
+
+    private static Stream<Arguments> provideReturnStatements() {
+        return Stream.of(
+            Arguments.of("return 10;", 10L),
+            Arguments.of("return 10; 9;", 10L),
+            Arguments.of("return 2 * 5; 9;", 10L),
+            Arguments.of("9; return 2 * 5; 9;", 10L),
+            Arguments.of(
+                """
+                    if (10 > 1) {
+                        if (10 > 1) {
+                            return 10;
+                        }
+                        
+                        return 1;
+                    }
+                    """,
+                    10
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideReturnStatements")
+    void testReturnStatements(String input, long expected) {
+       MonkeyObject evaluated = testEval(input);
+
+       testIntegerObject(evaluated, expected);
     }
 
     private void testNullObject(MonkeyObject evaluated) {

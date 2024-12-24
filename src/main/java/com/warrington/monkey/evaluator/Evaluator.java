@@ -16,9 +16,14 @@ public class Evaluator {
     public static MonkeyObject eval(Node node) {
         return switch (node) {
             // Statements
-            case Program p -> evalStatements(p.getStatements());
+            case Program p -> evalProgram(p.getStatements());
             case ExpressionStatement es -> eval(es.getExpression());
-            case BlockStatement bs -> evalStatements(bs.statements());
+            case BlockStatement bs -> evalBlockStatement(bs);
+            case ReturnStatement rs -> {
+                MonkeyObject value = eval(rs.returnValue());
+
+                yield new ReturnValue(value);
+            }
 
             // Expressions
             case IntegerLiteral il -> new Int(il.value());
@@ -39,6 +44,20 @@ public class Evaluator {
             case IfExpression ifExpression -> evalIfExpression(ifExpression);
             default -> null;
         };
+    }
+
+    private static MonkeyObject evalBlockStatement(BlockStatement block) {
+       MonkeyObject result = null;
+
+       for (Statement stmt : block.statements()) {
+           result = eval(stmt);
+           
+           if (result != null && result.type() == ObjectType.RETURN_VALUE) {
+               return result;
+           }
+       }
+
+       return result;
     }
 
     private static MonkeyObject evalIfExpression(IfExpression ifExp) {
@@ -94,11 +113,15 @@ public class Evaluator {
         };
     }
 
-    private static MonkeyObject evalStatements(List<Statement> statements) {
+    private static MonkeyObject evalProgram(List<Statement> statements) {
         MonkeyObject result = null;
 
         for (Statement stmt : statements) {
             result = eval(stmt);
+
+            if (result instanceof ReturnValue(MonkeyObject value)) {
+                return value;
+            }
         }
 
         return result;
