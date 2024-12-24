@@ -40,6 +40,8 @@ class ParserTest {
         "2 / (5 + 5),(2 / (5 + 5))",
         "-(5 + 5),(-(5 + 5))",
         "!(true == true),(!(true == true))",
+        "a + add(b * c) + d,((a + add((b * c))) + d)",
+        "add(a + b + c * d / f + g),add((((a + b) + ((c * d) / f)) + g))",
     })
     void testOperatorPrecedenceParsing(String input, String expected) {
 
@@ -70,7 +72,6 @@ class ParserTest {
             Arguments.of("false == false", false, "==", false)
         );
     }
-
 
 
     @ParameterizedTest
@@ -289,6 +290,41 @@ class ParserTest {
     }
 
     @Test
+    void testCallExpressionParsing() {
+        final var input = "add(1, 2 * 3, 4 + 5);";
+
+        final var lexer = new Lexer(input);
+
+        final var parser = new Parser(lexer);
+
+        final Program program = parser.parseProgram();
+
+        checkParserErrors(parser);
+
+        final List<Statement> statements = program.getStatements();
+
+        assertThat(statements.size())
+            .withFailMessage("program has not enough statements. got=%d", statements.size())
+            .isEqualTo(1);
+
+        final ExpressionStatement stmt = (ExpressionStatement) statements.getFirst();
+
+        final CallExpression callExp = (CallExpression) stmt.getExpression();
+
+        var arguments = callExp.arguments();
+
+        assertThat(arguments.size())
+            .withFailMessage("wrong number of arguments. expected 3. got=%d", arguments.size())
+            .isEqualTo(3);
+
+        testIdentifier(callExp.function(), "add");
+
+        testLiteralExpression(arguments.getFirst(), 1);
+        testInfixExpression(arguments.get(1), 2, "*", 3);
+        testInfixExpression(arguments.get(2), 4, "+", 5);
+    }
+
+    @Test
     void testIfExpression() {
         final var input = "if (x < y) { x }";
 
@@ -372,14 +408,17 @@ class ParserTest {
         testLiteralExpression(stmt.getExpression(), true);
     }
 
-    @Test
-    void testLetStatements() {
-        final var input = """
-            let x = 5;
-            let y = 10;
-            let foobar = 838383;
-            """;
+    private static Stream<Arguments> provideLetStatements() {
+        return Stream.of(
+            Arguments.of("let x = 5;", "x", 5),
+            Arguments.of("let y = true;", "y", true),
+            Arguments.of("let foobar = y", "foobar", "y")
+        );
+    }
 
+    @ParameterizedTest
+    @MethodSource("provideLetStatements")
+    void testLetStatements(String input, String expectedIdentifier, Object expectedValue) {
         final var lexer = new Lexer(input);
 
         final var parser = new Parser(lexer);
@@ -392,37 +431,31 @@ class ParserTest {
             fail("parseProgram() returned null");
         }
 
-        if (program.getStatements().size() != 3) {
-            fail("program.getStatements() does not contain 3 statements. got=%d"
+        if (program.getStatements().size() != 1) {
+            fail("program.getStatements() does not contain 1 statements. got=%d"
                 .formatted(program.getStatements().size()));
         }
 
-        final var expectedIdentifiers = List.of(
-            "x",
-            "y",
-            "foobar");
+        Statement stmt = program.getStatements().getFirst();
 
-        for (int i = 0; i < expectedIdentifiers.size(); i++) {
-            final var statement = program.getStatements().get(i);
-
-            if (!testLetStatement(statement, expectedIdentifiers.get(i))) {
-                return;
-            }
-
+        if (!testLetStatement(stmt, expectedIdentifier)) {
+            return;
         }
 
+        Expression value = ((LetStatement) stmt).value();
+
+        testLiteralExpression(value, expectedValue);
     }
 
     @Test
     void testString() {
         Program program = new Program();
 
-        LetStatement letStatement = new LetStatement(new Token(TokenType.LET, "let"));
-        Identifier myVar = new Identifier(new Token(TokenType.IDENT, "myVar"), "myVar");
-        Identifier anotherVar = new Identifier(new Token(TokenType.IDENT, "anotherVar"), "anotherVar");
+        var token = new Token(TokenType.LET, "let");
+        var myVar = new Identifier(new Token(TokenType.IDENT, "myVar"), "myVar");
+        var anotherVar = new Identifier(new Token(TokenType.IDENT, "anotherVar"), "anotherVar");
 
-        letStatement.setName(myVar);
-        letStatement.setValue(anotherVar);
+        LetStatement letStatement = new LetStatement(token, myVar, anotherVar);
 
         program.addStatement(letStatement);
 
@@ -431,14 +464,17 @@ class ParserTest {
         }
     }
 
-    @Test
-    void testReturnStatements() {
-        final var input = """
-            return 5;
-            return 10;
-            return 993322;
-            """;
+    private static Stream<Arguments> provideReturnStatements() {
+        return Stream.of(
+            Arguments.of("return 5;", 5),
+            Arguments.of("return true;", true),
+            Arguments.of("return foobar;", "foobar")
+        );
+    }
 
+    @ParameterizedTest
+    @MethodSource("provideReturnStatements")
+    void testReturnStatements(String input, Object expectedValue) {
         final var lexer = new Lexer(input);
 
         final var parser = new Parser(lexer);
@@ -451,20 +487,18 @@ class ParserTest {
             fail("parseProgram() returned null");
         }
 
-        if (program.getStatements().size() != 3) {
-            fail("program.getStatements() does not contain 3 statements. got=%d"
+        if (program.getStatements().size() != 1) {
+            fail("program.getStatements() does not contain 1 statements. got=%d"
                 .formatted(program.getStatements().size()));
         }
 
-        program.getStatements().forEach(statement -> {
-            if (statement instanceof ReturnStatement returnStatement) {
-                if (!returnStatement.tokenLiteral().equals("return")) {
-                    fail("statement.tokenLiteral not 'return'. got=%s".formatted(statement.tokenLiteral()));
-                }
-            } else {
-                fail("statement is not a ReturnStatement");
-            }
-        });
+        ReturnStatement stmt = (ReturnStatement) program.getStatements().getFirst();
+
+        assertThat(stmt.tokenLiteral())
+            .withFailMessage("stmt.tokenLiteral() not 'return', got='%s'", stmt.tokenLiteral())
+            .isEqualTo("return");
+
+        testLiteralExpression(stmt.returnValue(), expectedValue);
     }
 
     void testLiteralExpression(
@@ -503,14 +537,14 @@ class ParserTest {
         }
 
         if (statement instanceof LetStatement letStmt) {
-            if (!letStmt.getName().value().equals(name)) {
-                fail("letStmt.getName().getValue() not '%s'. got=%s".formatted(name, letStmt.getName().value()));
+            if (!letStmt.name().value().equals(name)) {
+                fail("letStmt.getName().getValue() not '%s'. got=%s".formatted(name, letStmt.name().value()));
                 return false;
             }
 
-            if (!letStmt.getName().tokenLiteral().equals(name)) {
+            if (!letStmt.name().tokenLiteral().equals(name)) {
                 fail("letStmt.getName().tokenLiteral() not '%s'. got=%s".formatted(name,
-                    letStmt.getName().tokenLiteral()));
+                    letStmt.name().tokenLiteral()));
                 return false;
             }
 

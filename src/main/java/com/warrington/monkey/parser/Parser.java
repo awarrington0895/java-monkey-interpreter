@@ -19,7 +19,8 @@ class Parser {
         PLUS, Precedence.SUM,
         MINUS, Precedence.SUM,
         SLASH, Precedence.PRODUCT,
-        ASTERISK, Precedence.PRODUCT
+        ASTERISK, Precedence.PRODUCT,
+        LPAREN, Precedence.CALL
     );
 
     private Lexer lexer;
@@ -55,6 +56,7 @@ class Parser {
         registerInfix(NOT_EQ, this::parseInfixExpression);
         registerInfix(LT, this::parseInfixExpression);
         registerInfix(GT, this::parseInfixExpression);
+        registerInfix(LPAREN, this::parseCallExpression);
 
         nextToken();
         nextToken();
@@ -108,24 +110,29 @@ class Parser {
     }
 
     private Statement parseLetStatement() {
-        final var stmt = new LetStatement(curToken);
+        assert curTokenIs(LET) : "Let statements should start with 'let'. got='%s'".formatted(curToken.literal());
+
+        final Token startToken = curToken;
 
         if (!expectPeek(IDENT)) {
             return null;
         }
 
-        stmt.setName(new Identifier(curToken));
+        final var name = new Identifier(curToken);
 
         if (!expectPeek(ASSIGN)) {
             return null;
         }
 
-        // TODO: We're skipping the expressions until we encounter a semicolon
-        while (!curTokenIs(SEMICOLON)) {
+        nextToken();
+
+        final Expression value = parseExpression(Precedence.LOWEST);
+
+        if (peekTokenIs(SEMICOLON)) {
             nextToken();
         }
 
-        return stmt;
+        return new LetStatement(startToken, name, value);
     }
 
     private Expression parseGroupedExpression() {
@@ -145,15 +152,19 @@ class Parser {
     }
 
     private Statement parseReturnStatement() {
-        final var stmt = new ReturnStatement(curToken);
+        assert curTokenIs(RETURN) : "Return statements should start with 'return'. got='%s'".formatted(curToken.literal());
+
+        final Token startToken = curToken;
 
         nextToken();
 
-        while (!curTokenIs(SEMICOLON)) {
+        final Expression returnValue = parseExpression(Precedence.LOWEST);
+
+        if (peekTokenIs(SEMICOLON)) {
             nextToken();
         }
 
-        return stmt;
+        return new ReturnStatement(startToken, returnValue);
     }
 
     private boolean curTokenIs(TokenType expectedType) {
@@ -299,6 +310,38 @@ class Parser {
         }
 
         return parameters;
+    }
+
+    private Expression parseCallExpression(Expression function) {
+        return new CallExpression(curToken, function, parseCallArguments());
+    }
+
+    private List<Expression> parseCallArguments() {
+        assert curTokenIs(LPAREN) : "Call expressions should start with '('. got='%s'.".formatted(curToken.literal());
+
+        var args = new ArrayList<Expression>();
+
+        if (peekTokenIs(RPAREN)) {
+            nextToken();
+            return args;
+        }
+
+        nextToken();
+
+        args.add(parseExpression(Precedence.LOWEST));
+
+        while (peekTokenIs(COMMA)) {
+            nextToken();
+            nextToken();
+
+            args.add(parseExpression(Precedence.LOWEST));
+        }
+
+        if (!expectPeek(RPAREN)) {
+            return null;
+        }
+
+        return args;
     }
 
     private Expression parseIfExpression() {

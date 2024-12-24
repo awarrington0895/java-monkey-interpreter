@@ -2,13 +2,10 @@ package com.warrington.monkey.ast;
 
 import com.warrington.monkey.token.Token;
 
-public class ReturnStatement implements Statement {
-    private Token token;
-    private Expression returnValue;
-
-    public ReturnStatement(Token token) {
-        this.token = token;
-    }
+public record ReturnStatement(
+    Token token,
+    Expression returnValue
+) implements Statement {
 
     @Override
     public String tokenLiteral() {
@@ -21,7 +18,7 @@ public class ReturnStatement implements Statement {
     public String toString() {
         final var builder = new StringBuilder();
 
-        builder.append(tokenLiteral() + " ");
+        builder.append(tokenLiteral()).append(" ");
 
         if (returnValue != null) {
             builder.append(returnValue.toString());
