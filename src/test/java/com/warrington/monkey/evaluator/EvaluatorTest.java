@@ -2,10 +2,7 @@ package com.warrington.monkey.evaluator;
 
 import com.warrington.monkey.ast.Program;
 import com.warrington.monkey.lexer.Lexer;
-import com.warrington.monkey.object.Bool;
-import com.warrington.monkey.object.Int;
-import com.warrington.monkey.object.MonkeyError;
-import com.warrington.monkey.object.MonkeyObject;
+import com.warrington.monkey.object.*;
 import com.warrington.monkey.parser.Parser;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -141,6 +138,7 @@ class EvaluatorTest {
             Arguments.of("true + false", "unknown operator: BOOLEAN + BOOLEAN"),
             Arguments.of("5; true + false; 5", "unknown operator: BOOLEAN + BOOLEAN"),
             Arguments.of("if (10 > 1) { true + false; }", "unknown operator: BOOLEAN + BOOLEAN"),
+            Arguments.of("foobar", "identifier not found: foobar"),
             Arguments.of(
                 """
                 if (10 > 1) {
@@ -172,6 +170,21 @@ class EvaluatorTest {
             .isEqualTo(expectedMessage);
     }
 
+    private static Stream<Arguments> provideLetStatements() {
+        return Stream.of(
+            Arguments.of("let a = 5; a;", 5),
+            Arguments.of("let a = 5 * 5; a;", 25),
+            Arguments.of("let a = 5; let b = a; b;", 5),
+            Arguments.of("let a = 5; let b = a; let c = a + b + 5; c;", 15)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideLetStatements")
+    void testLetStatements(String input, long expected) {
+       testIntegerObject(testEval(input), expected);
+    }
+
     private void testNullObject(MonkeyObject evaluated) {
         assertThat(evaluated)
             .withFailMessage("object is not NULL. got=%s", evaluated)
@@ -183,7 +196,7 @@ class EvaluatorTest {
         final var parser = new Parser(lexer);
         Program program = parser.parseProgram();
 
-        return Evaluator.eval(program);
+        return Evaluator.eval(program, new Environment());
     }
 
     private void testIntegerObject(MonkeyObject obj, long expected) {

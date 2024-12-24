@@ -13,14 +13,14 @@ public class Evaluator {
     private static final Bool TRUE = new Bool(true);
     private static final Bool FALSE = new Bool(false);
 
-    public static MonkeyObject eval(Node node) {
+    public static MonkeyObject eval(Node node, Environment env) {
         return switch (node) {
             // Statements
-            case Program p -> evalProgram(p.getStatements());
-            case ExpressionStatement es -> eval(es.getExpression());
-            case BlockStatement bs -> evalBlockStatement(bs);
+            case Program p -> evalProgram(p.getStatements(), env);
+            case ExpressionStatement es -> eval(es.getExpression(), env);
+            case BlockStatement bs -> evalBlockStatement(bs, env);
             case ReturnStatement rs -> {
-                MonkeyObject value = eval(rs.returnValue());
+                MonkeyObject value = eval(rs.returnValue(), env);
 
                 if (isError(value)) {
                     yield value;
@@ -29,11 +29,23 @@ public class Evaluator {
                 yield new ReturnValue(value);
             }
 
+            case LetStatement ls -> {
+                MonkeyObject value = eval(ls.value(), env);
+
+                if (isError(value)) {
+                    yield value;
+                }
+
+                env.set(ls.name().value(), value);
+
+                yield value;
+            }
+
             // Expressions
             case IntegerLiteral il -> new Int(il.value());
             case MonkeyBoolean mb -> nativeBoolToBooleanObject(mb.value());
             case PrefixExpression pe -> {
-                MonkeyObject right = eval(pe.right());
+                MonkeyObject right = eval(pe.right(), env);
 
                 if (isError(right)) {
                     yield right;
@@ -43,13 +55,13 @@ public class Evaluator {
             }
 
             case InfixExpression ie -> {
-                MonkeyObject left = eval(ie.left());
+                MonkeyObject left = eval(ie.left(), env);
 
                 if (isError(left)) {
                     yield left;
                 }
 
-                MonkeyObject right = eval(ie.right());
+                MonkeyObject right = eval(ie.right(), env);
 
                 if (isError(right)) {
                     yield right;
@@ -58,7 +70,9 @@ public class Evaluator {
                 yield evalInfixExpression(ie.operator(), left, right);
             }
 
-            case IfExpression ifExpression -> evalIfExpression(ifExpression);
+            case IfExpression ifExpression -> evalIfExpression(ifExpression, env);
+
+            case Identifier i -> evalIdentifier(i, env);
             default -> null;
         };
     }
@@ -71,11 +85,21 @@ public class Evaluator {
         return false;
     }
 
-    private static MonkeyObject evalBlockStatement(BlockStatement block) {
+    private static MonkeyObject evalIdentifier(Identifier node, Environment env) {
+        MonkeyObject value = env.get(node.value());
+
+        if (value == null) {
+            return newError("identifier not found: %s", node.value());
+        }
+
+        return value;
+    }
+
+    private static MonkeyObject evalBlockStatement(BlockStatement block, Environment env) {
         MonkeyObject result = null;
 
         for (Statement stmt : block.statements()) {
-            result = eval(stmt);
+            result = eval(stmt, env);
 
             if (result != null && (result.type() == ObjectType.RETURN_VALUE || result.type() == ObjectType.ERROR)) {
                 return result;
@@ -85,17 +109,17 @@ public class Evaluator {
         return result;
     }
 
-    private static MonkeyObject evalIfExpression(IfExpression ifExp) {
-        MonkeyObject condition = eval(ifExp.condition());
+    private static MonkeyObject evalIfExpression(IfExpression ifExp, Environment env) {
+        MonkeyObject condition = eval(ifExp.condition(), env);
 
         if (isError(condition)) {
             return condition;
         }
 
         if (isTruthy(condition)) {
-            return eval(ifExp.consequence());
+            return eval(ifExp.consequence(), env);
         } else if (ifExp.alternative() != null) {
-            return eval(ifExp.alternative());
+            return eval(ifExp.alternative(), env);
         } else {
             return NULL;
         }
@@ -146,11 +170,11 @@ public class Evaluator {
         };
     }
 
-    private static MonkeyObject evalProgram(List<Statement> statements) {
+    private static MonkeyObject evalProgram(List<Statement> statements, Environment env) {
         MonkeyObject result = null;
 
         for (Statement stmt : statements) {
-            result = eval(stmt);
+            result = eval(stmt, env);
 
             if (result instanceof ReturnValue(MonkeyObject value)) {
                 return value;

@@ -6,6 +6,7 @@ import java.util.Scanner;
 import com.warrington.monkey.ast.Program;
 import com.warrington.monkey.evaluator.Evaluator;
 import com.warrington.monkey.lexer.Lexer;
+import com.warrington.monkey.object.Environment;
 import com.warrington.monkey.object.MonkeyObject;
 import com.warrington.monkey.parser.Parser;
 import com.warrington.monkey.token.Token;
@@ -19,6 +20,8 @@ public class Repl {
 
     public static void start() {
         try (Scanner scanner = new Scanner(System.in)) {
+            Environment env = new Environment();
+
             while (true) {
                 System.out.print(PROMPT);
 
@@ -38,7 +41,7 @@ public class Repl {
                     continue;
                 }
 
-                final MonkeyObject evaluated = Evaluator.eval(program);
+                final MonkeyObject evaluated = Evaluator.eval(program, env);
 
                 if (evaluated != null) {
                     System.out.println(evaluated.inspect());
