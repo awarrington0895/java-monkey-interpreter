@@ -4,7 +4,10 @@ import java.util.List;
 import java.util.Scanner;
 
 import com.warrington.monkey.ast.Program;
+import com.warrington.monkey.evaluator.Evaluator;
 import com.warrington.monkey.lexer.Lexer;
+import com.warrington.monkey.object.Environment;
+import com.warrington.monkey.object.MonkeyObject;
 import com.warrington.monkey.parser.Parser;
 import com.warrington.monkey.token.Token;
 import com.warrington.monkey.token.TokenType;
@@ -13,6 +16,38 @@ public class Repl {
     private static final String PROMPT = ">> ";
 
     private Repl() {
+    }
+
+    public static void start() {
+        try (Scanner scanner = new Scanner(System.in)) {
+            Environment env = new Environment();
+
+            while (true) {
+                System.out.print(PROMPT);
+
+                final String line = scanner.nextLine();
+
+                if (line == null) {
+                    return;
+                }
+
+                final var lexer = new Lexer(line);
+                final var parser = new Parser(lexer);
+
+                final Program program = parser.parseProgram();
+
+                if (!parser.errors().isEmpty()) {
+                    printParserErrors(parser.errors());
+                    continue;
+                }
+
+                final MonkeyObject evaluated = Evaluator.eval(program, env);
+
+                if (evaluated != null) {
+                    System.out.println(evaluated.inspect());
+                }
+            }
+        }
     }
 
     public static void startParser() {
