@@ -39,7 +39,20 @@ class EvaluatorTest {
     @ParameterizedTest
     @CsvSource({
         "true,true",
-        "false,false"
+        "false,false",
+        "1 < 2,true",
+        "1 > 2,false",
+        "1 < 1,false",
+        "1 > 1,false",
+        "1 == 1,true",
+        "1 != 1,false",
+        "1 == 2,false",
+        "1 != 2,true",
+        "true == true,true",
+        "false == false,true",
+        "true == false,false",
+        "true != false,true",
+        "false != true,true"
     })
     void testEvalBooleanExpression(String input, boolean expected) {
         MonkeyObject evaluated = testEval(input);

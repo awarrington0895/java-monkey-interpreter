@@ -42,7 +42,19 @@ public class Evaluator {
             return evalIntegerInfixExpression(operator, (Int) left, (Int) right);
         }
 
+        if (left.type() == ObjectType.BOOLEAN && right.type() == ObjectType.BOOLEAN) {
+            return evalBooleanInfixExpression(operator, (Bool) left, (Bool) right);
+        }
+
         return NULL;
+    }
+
+    private static MonkeyObject evalBooleanInfixExpression(String operator, Bool left, Bool right) {
+        return switch (operator) {
+            case "==" -> nativeBoolToBooleanObject(left == right);
+            case "!=" -> nativeBoolToBooleanObject(left != right);
+            default -> NULL;
+        };
     }
 
     private static MonkeyObject evalIntegerInfixExpression(String operator, Int left, Int right) {
@@ -54,6 +66,10 @@ public class Evaluator {
             case "-" -> new Int(leftVal - rightVal);
             case "/" -> new Int(leftVal / rightVal);
             case "*" -> new Int(leftVal * rightVal);
+            case "<" -> nativeBoolToBooleanObject(leftVal < rightVal);
+            case ">" -> nativeBoolToBooleanObject(leftVal > rightVal);
+            case "==" -> nativeBoolToBooleanObject(leftVal == rightVal);
+            case "!=" -> nativeBoolToBooleanObject(leftVal != rightVal);
             default -> NULL;
         };
     }
