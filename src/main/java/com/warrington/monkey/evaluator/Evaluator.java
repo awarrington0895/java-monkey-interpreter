@@ -11,13 +11,14 @@ public class Evaluator {
     // Can simply reference these constants
     private static final Bool TRUE = new Bool(true);
     private static final Bool FALSE = new Bool(false);
-    private static final Null NULL = new Null();
+    static final Null NULL = new Null();
 
     public static MonkeyObject eval(Node node) {
         return switch (node) {
             // Statements
             case Program p -> evalStatements(p.getStatements());
             case ExpressionStatement es -> eval(es.getExpression());
+            case BlockStatement bs -> evalStatements(bs.statements());
 
             // Expressions
             case IntegerLiteral il -> new Int(il.value());
@@ -27,14 +28,33 @@ public class Evaluator {
 
                 yield evalPrefixExpression(pe.operator(), right);
             }
+
             case InfixExpression ie -> {
                 MonkeyObject left = eval(ie.left());
                 MonkeyObject right = eval(ie.right());
 
                 yield evalInfixExpression(ie.operator(), left, right);
             }
+
+            case IfExpression ifExpression -> evalIfExpression(ifExpression);
             default -> null;
         };
+    }
+
+    private static MonkeyObject evalIfExpression(IfExpression ifExp) {
+        MonkeyObject condition = eval(ifExp.condition());
+
+        if (isTruthy(condition)) {
+            return eval(ifExp.consequence());
+        } else if (ifExp.alternative() != null) {
+            return eval(ifExp.alternative());
+        } else {
+            return NULL;
+        }
+    }
+
+    private static boolean isTruthy(MonkeyObject object) {
+        return object != NULL && object != FALSE;
     }
 
     private static MonkeyObject evalInfixExpression(String operator, MonkeyObject left, MonkeyObject right) {

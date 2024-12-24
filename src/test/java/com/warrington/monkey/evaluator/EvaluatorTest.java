@@ -7,9 +7,15 @@ import com.warrington.monkey.object.Int;
 import com.warrington.monkey.object.MonkeyObject;
 import com.warrington.monkey.parser.Parser;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.stream.Stream;
+
+import static com.warrington.monkey.evaluator.Evaluator.NULL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class EvaluatorTest {
 
@@ -72,6 +78,36 @@ class EvaluatorTest {
         MonkeyObject evaluated = testEval(input);
 
         testBooleanObject(evaluated, expected);
+    }
+
+    private static Stream<Arguments> provideIfElseExpressions() {
+        return Stream.of(
+            Arguments.of("if (true) { 10 }", 10L),
+            Arguments.of("if (false) { 10 }", null),
+            Arguments.of("if (1) { 10 }", 10L),
+            Arguments.of("if (1 < 2) { 10 }", 10L),
+            Arguments.of("if (1 > 2) { 10 }", null),
+            Arguments.of("if (1 > 2) { 10 } else { 20 }", 20L),
+            Arguments.of("if (1 < 2) { 10 } else { 20 }", 10L)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideIfElseExpressions")
+    void testIfElseExpressions(String input, Long expected) {
+       MonkeyObject evaluated = testEval(input);
+
+       if (expected == null) {
+           testNullObject(evaluated);
+       } else {
+           testIntegerObject(evaluated, expected);
+       }
+    }
+
+    private void testNullObject(MonkeyObject evaluated) {
+        assertThat(evaluated)
+            .withFailMessage("object is not NULL. got=%s", evaluated)
+            .isEqualTo(NULL);
     }
 
     private MonkeyObject testEval(String input) {
