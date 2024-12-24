@@ -1,13 +1,14 @@
-package com.warrington.lexer;
+package com.warrington.monkey.lexer;
 
-import static com.warrington.token.TokenType.*;
+import static com.warrington.monkey.token.TokenType.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 
+import com.warrington.monkey.lexer.Lexer;
 import org.junit.jupiter.api.Test;
 
-import com.warrington.token.Token;
+import com.warrington.monkey.token.Token;
 
 class LexerTest {
     final String input = """

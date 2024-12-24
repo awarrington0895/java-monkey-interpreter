@@ -1,12 +1,12 @@
-package com.warrington.ast;
+package com.warrington.monkey.ast;
 
-import com.warrington.token.Token;
+import com.warrington.monkey.token.Token;
 
 public class Identifier implements Expression {
     private Token token;
     private String value;
 
-    public String getValue() {
+    public String value() {
         return value;
     }
 

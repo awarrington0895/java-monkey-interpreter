@@ -1,27 +1,27 @@
-package com.warrington.lexer;
+package com.warrington.monkey.lexer;
 
-import static com.warrington.token.TokenType.ASSIGN;
-import static com.warrington.token.TokenType.ASTERISK;
-import static com.warrington.token.TokenType.BANG;
-import static com.warrington.token.TokenType.COMMA;
-import static com.warrington.token.TokenType.EOF;
-import static com.warrington.token.TokenType.EQ;
-import static com.warrington.token.TokenType.GT;
-import static com.warrington.token.TokenType.ILLEGAL;
-import static com.warrington.token.TokenType.INT;
-import static com.warrington.token.TokenType.LPAREN;
-import static com.warrington.token.TokenType.LSQUIRLY;
-import static com.warrington.token.TokenType.LT;
-import static com.warrington.token.TokenType.MINUS;
-import static com.warrington.token.TokenType.NOT_EQ;
-import static com.warrington.token.TokenType.PLUS;
-import static com.warrington.token.TokenType.RPAREN;
-import static com.warrington.token.TokenType.RSQUIRLY;
-import static com.warrington.token.TokenType.SEMICOLON;
-import static com.warrington.token.TokenType.SLASH;
+import static com.warrington.monkey.token.TokenType.ASSIGN;
+import static com.warrington.monkey.token.TokenType.ASTERISK;
+import static com.warrington.monkey.token.TokenType.BANG;
+import static com.warrington.monkey.token.TokenType.COMMA;
+import static com.warrington.monkey.token.TokenType.EOF;
+import static com.warrington.monkey.token.TokenType.EQ;
+import static com.warrington.monkey.token.TokenType.GT;
+import static com.warrington.monkey.token.TokenType.ILLEGAL;
+import static com.warrington.monkey.token.TokenType.INT;
+import static com.warrington.monkey.token.TokenType.LPAREN;
+import static com.warrington.monkey.token.TokenType.LSQUIRLY;
+import static com.warrington.monkey.token.TokenType.LT;
+import static com.warrington.monkey.token.TokenType.MINUS;
+import static com.warrington.monkey.token.TokenType.NOT_EQ;
+import static com.warrington.monkey.token.TokenType.PLUS;
+import static com.warrington.monkey.token.TokenType.RPAREN;
+import static com.warrington.monkey.token.TokenType.RSQUIRLY;
+import static com.warrington.monkey.token.TokenType.SEMICOLON;
+import static com.warrington.monkey.token.TokenType.SLASH;
 
-import com.warrington.token.Token;
-import com.warrington.token.TokenType;
+import com.warrington.monkey.token.Token;
+import com.warrington.monkey.token.TokenType;
 
 public class Lexer {
 

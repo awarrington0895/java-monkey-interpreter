@@ -1,4 +1,4 @@
-package com.warrington.ast;
+package com.warrington.monkey.ast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,8 +8,8 @@ public class Program implements Node {
 
     @Override
     public String tokenLiteral() {
-        if (statements.size() > 0) {
-            return statements.get(0).tokenLiteral();
+        if (!statements.isEmpty()) {
+            return statements.getFirst().tokenLiteral();
         } else {
             return "";
         }

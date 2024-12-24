@@ -1,4 +1,4 @@
-package com.warrington.token;
+package com.warrington.monkey.token;
 
 import java.util.Map;
 
@@ -33,7 +33,7 @@ public enum TokenType {
     ELSE("ELSE"),
     RETURN("RETURN");
 
-    public String literalValue;
+    public final String literalValue;
 
     public static TokenType lookupIdent(String ident) {
         return keywords.getOrDefault(ident, IDENT);

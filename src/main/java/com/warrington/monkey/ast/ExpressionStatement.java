@@ -1,10 +1,15 @@
-package com.warrington.ast;
+package com.warrington.monkey.ast;
 
-import com.warrington.token.Token;
+import com.warrington.monkey.token.Token;
 
 public class ExpressionStatement implements Statement {
     private Token token;
     private Expression expression;
+
+    public ExpressionStatement(Token token, Expression expression) {
+        this.token = token;
+        this.expression = expression;
+    }
 
     @Override
     public String tokenLiteral() {
@@ -18,5 +23,9 @@ public class ExpressionStatement implements Statement {
         }
 
         return "";
+    }
+
+    public Expression getExpression() {
+        return expression;
     }
 }

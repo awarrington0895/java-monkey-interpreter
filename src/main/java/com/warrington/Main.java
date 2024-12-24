@@ -1,6 +1,6 @@
 package com.warrington;
 
-import com.warrington.repl.Repl;
+import com.warrington.monkey.repl.Repl;
 
 class Main {
     public static void main(String[] args) {
@@ -14,6 +14,6 @@ class Main {
 
         System.out.println("Feel free to type in commands");
 
-        Repl.start();
+        Repl.startParser();
     }
 }
