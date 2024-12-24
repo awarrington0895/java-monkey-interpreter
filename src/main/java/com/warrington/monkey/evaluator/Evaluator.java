@@ -7,11 +7,11 @@ import java.util.List;
 
 public class Evaluator {
 
+    static final Null NULL = new Null();
     // No need to allocate new objects for true/false whenever it is encountered
     // Can simply reference these constants
     private static final Bool TRUE = new Bool(true);
     private static final Bool FALSE = new Bool(false);
-    static final Null NULL = new Null();
 
     public static MonkeyObject eval(Node node) {
         return switch (node) {
@@ -22,6 +22,10 @@ public class Evaluator {
             case ReturnStatement rs -> {
                 MonkeyObject value = eval(rs.returnValue());
 
+                if (isError(value)) {
+                    yield value;
+                }
+
                 yield new ReturnValue(value);
             }
 
@@ -31,12 +35,25 @@ public class Evaluator {
             case PrefixExpression pe -> {
                 MonkeyObject right = eval(pe.right());
 
+                if (isError(right)) {
+                    yield right;
+                }
+
                 yield evalPrefixExpression(pe.operator(), right);
             }
 
             case InfixExpression ie -> {
                 MonkeyObject left = eval(ie.left());
+
+                if (isError(left)) {
+                    yield left;
+                }
+
                 MonkeyObject right = eval(ie.right());
+
+                if (isError(right)) {
+                    yield right;
+                }
 
                 yield evalInfixExpression(ie.operator(), left, right);
             }
@@ -46,22 +63,34 @@ public class Evaluator {
         };
     }
 
+    private static boolean isError(MonkeyObject object) {
+        if (object != null) {
+            return object.type() == ObjectType.ERROR;
+        }
+
+        return false;
+    }
+
     private static MonkeyObject evalBlockStatement(BlockStatement block) {
-       MonkeyObject result = null;
+        MonkeyObject result = null;
 
-       for (Statement stmt : block.statements()) {
-           result = eval(stmt);
-           
-           if (result != null && result.type() == ObjectType.RETURN_VALUE) {
-               return result;
-           }
-       }
+        for (Statement stmt : block.statements()) {
+            result = eval(stmt);
 
-       return result;
+            if (result != null && (result.type() == ObjectType.RETURN_VALUE || result.type() == ObjectType.ERROR)) {
+                return result;
+            }
+        }
+
+        return result;
     }
 
     private static MonkeyObject evalIfExpression(IfExpression ifExp) {
         MonkeyObject condition = eval(ifExp.condition());
+
+        if (isError(condition)) {
+            return condition;
+        }
 
         if (isTruthy(condition)) {
             return eval(ifExp.consequence());
@@ -85,14 +114,18 @@ public class Evaluator {
             return evalBooleanInfixExpression(operator, (Bool) left, (Bool) right);
         }
 
-        return NULL;
+        if (left.type() != right.type()) {
+            return newError("type mismatch: %s %s %s", left.type(), operator, right.type());
+        }
+
+        return newError("unknown operator: %s %s %s", left.type(), operator, right.type());
     }
 
     private static MonkeyObject evalBooleanInfixExpression(String operator, Bool left, Bool right) {
         return switch (operator) {
             case "==" -> nativeBoolToBooleanObject(left == right);
             case "!=" -> nativeBoolToBooleanObject(left != right);
-            default -> NULL;
+            default -> newError("unknown operator: %s %s %s", left.type(), operator, right.type());
         };
     }
 
@@ -109,7 +142,7 @@ public class Evaluator {
             case ">" -> nativeBoolToBooleanObject(leftVal > rightVal);
             case "==" -> nativeBoolToBooleanObject(leftVal == rightVal);
             case "!=" -> nativeBoolToBooleanObject(leftVal != rightVal);
-            default -> NULL;
+            default -> newError("unknown operator: %s %s %s", left.type(), operator, right.type());
         };
     }
 
@@ -121,6 +154,10 @@ public class Evaluator {
 
             if (result instanceof ReturnValue(MonkeyObject value)) {
                 return value;
+            }
+
+            if (result instanceof MonkeyError err) {
+                return err;
             }
         }
 
@@ -139,14 +176,14 @@ public class Evaluator {
         return switch (operator) {
             case "!" -> evalBangOperatorExpression(right);
             case "-" -> evalMinusPrefixOperatorExpression(right);
-            default -> NULL;
+            default -> newError("unknown operator: %s%s", operator, right.type());
         };
     }
 
     private static MonkeyObject evalMinusPrefixOperatorExpression(MonkeyObject right) {
         return switch (right) {
             case Int i -> new Int(-i.value());
-            default -> NULL;
+            default -> newError("unknown operator: -%s", right.type());
         };
     }
 
@@ -160,5 +197,9 @@ public class Evaluator {
         } else {
             return FALSE;
         }
+    }
+
+    private static MonkeyError newError(String format, Object... a) {
+        return new MonkeyError(format.formatted(a));
     }
 }

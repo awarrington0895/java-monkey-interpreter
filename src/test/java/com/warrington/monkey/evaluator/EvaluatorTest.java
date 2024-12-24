@@ -4,6 +4,7 @@ import com.warrington.monkey.ast.Program;
 import com.warrington.monkey.lexer.Lexer;
 import com.warrington.monkey.object.Bool;
 import com.warrington.monkey.object.Int;
+import com.warrington.monkey.object.MonkeyError;
 import com.warrington.monkey.object.MonkeyObject;
 import com.warrington.monkey.parser.Parser;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -130,6 +131,45 @@ class EvaluatorTest {
        MonkeyObject evaluated = testEval(input);
 
        testIntegerObject(evaluated, expected);
+    }
+
+    private static Stream<Arguments> provideErrors() {
+        return Stream.of(
+            Arguments.of("5 + true;", "type mismatch: INTEGER + BOOLEAN"),
+            Arguments.of("5 + true; 5;", "type mismatch: INTEGER + BOOLEAN"),
+            Arguments.of("-true", "unknown operator: -BOOLEAN"),
+            Arguments.of("true + false", "unknown operator: BOOLEAN + BOOLEAN"),
+            Arguments.of("5; true + false; 5", "unknown operator: BOOLEAN + BOOLEAN"),
+            Arguments.of("if (10 > 1) { true + false; }", "unknown operator: BOOLEAN + BOOLEAN"),
+            Arguments.of(
+                """
+                if (10 > 1) {
+                    if (10 > 1) {
+                        return true + false;
+                    }
+                    
+                    return 1;
+                }
+                """,
+                "unknown operator: BOOLEAN + BOOLEAN"
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideErrors")
+    void testErrorHandling(String input, String expectedMessage) {
+        MonkeyObject evaluated = testEval(input);
+
+        assertThat(evaluated)
+            .withFailMessage("no error object returned. got=%s", evaluated.type())
+            .isInstanceOf(MonkeyError.class);
+
+        MonkeyError error = (MonkeyError) evaluated;
+
+        assertThat(error.message())
+            .withFailMessage("wrong error message. expected=%s, got=%s", expectedMessage, error.message())
+            .isEqualTo(expectedMessage);
     }
 
     private void testNullObject(MonkeyObject evaluated) {
