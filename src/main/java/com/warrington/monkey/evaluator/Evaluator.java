@@ -44,6 +44,7 @@ public class Evaluator {
 
             // Expressions
             case IntegerLiteral il -> new Int(il.value());
+            case StringLiteral sl -> new Str(sl.value());
             case MonkeyBoolean mb -> nativeBoolToBooleanObject(mb.value());
             case PrefixExpression pe -> {
                 MonkeyObject right = eval(pe.right(), env);
