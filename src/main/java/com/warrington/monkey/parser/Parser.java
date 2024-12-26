@@ -1,12 +1,14 @@
 package com.warrington.monkey.parser;
 
 import com.warrington.monkey.ast.*;
-
-import java.util.*;
-
 import com.warrington.monkey.lexer.Lexer;
 import com.warrington.monkey.token.Token;
 import com.warrington.monkey.token.TokenType;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.warrington.monkey.token.TokenType.*;
 
@@ -37,6 +39,7 @@ public class Parser {
         registerPrefix(LPAREN, this::parseGroupedExpression);
         registerPrefix(IF, this::parseIfExpression);
         registerPrefix(FUNCTION, this::parseFunctionLiteral);
+        registerPrefix(STRING, this::parseStringLiteral);
 
         registerInfix(PLUS, this::parseInfixExpression);
         registerInfix(MINUS, this::parseInfixExpression);
@@ -98,6 +101,7 @@ public class Parser {
             default -> parseExpressionStatement();
         };
     }
+
 
     private Statement parseLetStatement() {
         assert curTokenIs(LET) : "Let statements should start with 'let'. got='%s'".formatted(curToken.literal());
@@ -220,6 +224,12 @@ public class Parser {
 
     private Expression parseIdentifier() {
         return new Identifier(curToken, curToken.literal());
+    }
+
+    private Expression parseStringLiteral() {
+        assert curTokenIs(STRING) : "String literal should be STRING token. got=%s".formatted(curToken.type());
+
+        return new StringLiteral(curToken, curToken.literal());
     }
 
     private Expression parseIntegerLiteral() {

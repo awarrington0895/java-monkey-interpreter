@@ -134,6 +134,37 @@ class ParserTest {
     }
 
     @Test
+    void testStringLiteralExpression() {
+        final var input = "\"hello world!\";";
+
+        final var lexer = new Lexer(input);
+
+        final var parser = new Parser(lexer);
+
+        final Program program = parser.parseProgram();
+
+        checkParserErrors(parser);
+
+        final List<Statement> statements = program.getStatements();
+
+        assertThat(statements.size())
+            .withFailMessage("program has not enough statements. got=%d", statements.size())
+            .isEqualTo(1);
+
+        final ExpressionStatement stmt = (ExpressionStatement) statements.getFirst();
+
+        assertThat(stmt.getExpression())
+            .withFailMessage("expression is not StringLiteral. got=%s.".formatted(stmt.getExpression().getClass()))
+            .isInstanceOf(StringLiteral.class);
+
+        final var literal = (StringLiteral) stmt.getExpression();
+
+        assertThat(literal.tokenLiteral())
+            .withFailMessage("literal.tokenLiteral() not %s. got=%s", "foobar", literal.tokenLiteral())
+            .isEqualTo("hello world!");
+    }
+
+    @Test
     void testIntegerLiteralExpression() {
         final var input = "5;";
 
