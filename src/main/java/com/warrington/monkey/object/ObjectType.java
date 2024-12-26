@@ -7,5 +7,6 @@ public enum ObjectType {
     RETURN_VALUE,
     ERROR,
     FUNCTION,
-    STRING
+    STRING,
+    BUILTIN
 }

@@ -8,7 +8,7 @@ import java.util.List;
 
 public class Evaluator {
 
-    static final Null NULL = new Null();
+    public static final Null NULL = new Null();
     // No need to allocate new objects for true/false whenever it is encountered
     // Can simply reference these constants
     private static final Bool TRUE = new Bool(true);
@@ -96,17 +96,17 @@ public class Evaluator {
     }
 
     private static MonkeyObject applyFunction(MonkeyObject fn, List<MonkeyObject> args) {
-        if (!(fn instanceof MonkeyFunction)) {
-            return newError("not a function: %s", fn.type());
-        }
+        return switch (fn) {
+            case MonkeyFunction mf -> {
+                final Environment extendedEnv = extendFunctionEnv(mf, args);
 
-        MonkeyFunction function = (MonkeyFunction) fn;
+                MonkeyObject evaluated = eval(mf.body(), extendedEnv);
 
-        final Environment extendedEnv = extendFunctionEnv(function, args);
-
-        MonkeyObject evaluated = eval(function.body(), extendedEnv);
-
-        return unwrapReturnValue(evaluated);
+                yield unwrapReturnValue(evaluated);
+            }
+            case Builtin b -> b.func().apply(args.toArray(new MonkeyObject[0]));
+            default -> newError("not a function: %s", fn.type());
+        };
     }
 
     private static MonkeyObject unwrapReturnValue(MonkeyObject object) {
@@ -154,6 +154,12 @@ public class Evaluator {
         MonkeyObject value = env.get(node.value());
 
         if (value == null) {
+            MonkeyObject builtin = Builtins.get(node.value());
+
+            if (builtin != null) {
+                return builtin;
+            }
+
             return newError("identifier not found: %s", node.value());
         }
 
@@ -299,7 +305,7 @@ public class Evaluator {
         }
     }
 
-    private static MonkeyError newError(String format, Object... a) {
+    static MonkeyError newError(String format, Object... a) {
         return new MonkeyError(format.formatted(a));
     }
 }
