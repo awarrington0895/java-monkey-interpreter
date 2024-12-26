@@ -113,6 +113,27 @@ class EvaluatorTest {
         testIntegerObject(evaluated, expected);
     }
 
+    @Test
+    void testArrayLiterals() {
+        final var input = "[1, 2 * 2, 3 + 3]";
+
+        MonkeyObject evaluated = testEval(input);
+
+        assertThat(evaluated)
+            .withFailMessage("object is not Array. got=%s", evaluated.type())
+            .isInstanceOf(Array.class);
+
+        Array array = (Array) evaluated;
+
+        assertThat(array.elements().size())
+            .withFailMessage("array has wrong number of elements. got=%d", array.elements().size())
+            .isEqualTo(3);
+
+        testIntegerObject(array.elements().getFirst(), 1L);
+        testIntegerObject(array.elements().get(1), 4L);
+        testIntegerObject(array.elements().get(2), 6L);
+    }
+
     private static Stream<Arguments> provideBuiltins() {
         return Stream.of(
             Arguments.of("len(\"\")", 0),

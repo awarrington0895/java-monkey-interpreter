@@ -76,6 +76,15 @@ public class Evaluator {
 
             case Identifier i -> evalIdentifier(i, env);
             case FunctionLiteral fl -> new MonkeyFunction(fl.parameters(), fl.body(), env);
+            case ArrayLiteral al -> {
+                List<MonkeyObject> elements = evalExpressions(al.elements(), env);
+
+                if (elements.size() == 1 && isError(elements.getFirst())) {
+                    yield elements.getFirst();
+                }
+
+                yield new Array(evalExpressions(al.elements(), env));
+            }
             case CallExpression ce -> {
                 MonkeyObject function = eval(ce.function(), env);
 
