@@ -62,6 +62,12 @@ public class Lexer {
             case '}':
                 token = new Token(RSQUIRLY, ch);
                 break;
+            case '[':
+                token = new Token(LBRACKET, ch);
+                break;
+            case ']':
+                token = new Token(RBRACKET, ch);
+                break;
             case '-':
                 token = new Token(MINUS, ch);
                 break;

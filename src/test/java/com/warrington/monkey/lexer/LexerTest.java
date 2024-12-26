@@ -33,6 +33,7 @@ class LexerTest {
         "foobar"
         "foo bar"
         "tellme!"
+        [1, 2];
         """;
 
     @Test
@@ -116,6 +117,12 @@ class LexerTest {
             new Token(STRING, "foobar"),
             new Token(STRING, "foo bar"),
             new Token(STRING, "tellme!"),
+            new Token(LBRACKET, "["),
+            new Token(INT, "1"),
+            new Token(COMMA, ","),
+            new Token(INT, "2"),
+            new Token(RBRACKET, "]"),
+            new Token(SEMICOLON, ";"),
             new Token(EOF, ""));
 
         Token token = null;
