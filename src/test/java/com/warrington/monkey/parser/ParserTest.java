@@ -172,8 +172,8 @@ class ParserTest {
             .isEqualTo(3);
 
         testIntegerLiteral(array.elements().getFirst(), 1);
-        testInfixExpression(array.elements().get(1), 2, "*", "2");
-        testInfixExpression(array.elements().get(2), 3, "+", "3");
+        testInfixExpression(array.elements().get(1), 2, "*", 2);
+        testInfixExpression(array.elements().get(2), 3, "+", 3);
     }
 
     List<Statement> testParse(String input) {

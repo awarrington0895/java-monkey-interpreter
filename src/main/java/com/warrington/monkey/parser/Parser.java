@@ -40,6 +40,7 @@ public class Parser {
         registerPrefix(IF, this::parseIfExpression);
         registerPrefix(FUNCTION, this::parseFunctionLiteral);
         registerPrefix(STRING, this::parseStringLiteral);
+        registerPrefix(LBRACKET, this::parseArrayLiteral);
 
         registerInfix(PLUS, this::parseInfixExpression);
         registerInfix(MINUS, this::parseInfixExpression);
@@ -54,6 +55,7 @@ public class Parser {
         nextToken();
         nextToken();
     }
+
 
     void nextToken() {
         curToken = peekToken;
@@ -312,36 +314,41 @@ public class Parser {
         return parameters;
     }
 
-    private Expression parseCallExpression(Expression function) {
-        return new CallExpression(curToken, function, parseCallArguments());
+    private List<Expression> parseExpressionList(TokenType end) {
+       var list = new ArrayList<Expression>();
+
+       if (peekTokenIs(end)) {
+           nextToken();
+
+           return list;
+       }
+
+       nextToken();
+
+       list.add(parseExpression(Precedence.LOWEST));
+
+       while (peekTokenIs(COMMA)) {
+           nextToken();
+           nextToken();
+
+           list.add(parseExpression(Precedence.LOWEST));
+       }
+
+       if (!expectPeek(end)) {
+           return null;
+       }
+
+       return list;
     }
 
-    private List<Expression> parseCallArguments() {
-        assert curTokenIs(LPAREN) : "Call expressions should start with '('. got='%s'.".formatted(curToken.literal());
+    private Expression parseArrayLiteral() {
+        assert curTokenIs(LBRACKET) : "Array literal should start with LBRACKET token. got=%s".formatted(curToken);
 
-        var args = new ArrayList<Expression>();
+        return new ArrayLiteral(curToken, parseExpressionList(RBRACKET));
+    }
 
-        if (peekTokenIs(RPAREN)) {
-            nextToken();
-            return args;
-        }
-
-        nextToken();
-
-        args.add(parseExpression(Precedence.LOWEST));
-
-        while (peekTokenIs(COMMA)) {
-            nextToken();
-            nextToken();
-
-            args.add(parseExpression(Precedence.LOWEST));
-        }
-
-        if (!expectPeek(RPAREN)) {
-            return null;
-        }
-
-        return args;
+    private Expression parseCallExpression(Expression function) {
+        return new CallExpression(curToken, function, parseExpressionList(RPAREN));
     }
 
     private Expression parseIfExpression() {
