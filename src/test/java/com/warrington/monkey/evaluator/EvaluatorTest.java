@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 
 import static com.warrington.monkey.evaluator.Evaluator.NULL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 class EvaluatorTest {
 
@@ -110,6 +111,38 @@ class EvaluatorTest {
     void testEvalIntegerExpression(String input, long expected) {
         MonkeyObject evaluated = testEval(input);
         testIntegerObject(evaluated, expected);
+    }
+
+    private static Stream<Arguments> provideBuiltins() {
+        return Stream.of(
+            Arguments.of("len(\"\")", 0),
+            Arguments.of("len(\"four\")", 4),
+            Arguments.of("len(\"hello world\")", 11),
+            Arguments.of("len(1)", "argument to 'len' not supported, got INTEGER"),
+            Arguments.of("len(\"one\", \"two\")", "wrong number of arguments. got=2, want=1")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideBuiltins")
+    void testBuiltins(String input, Object expected) {
+        MonkeyObject evaluated = testEval(input);
+
+        switch(expected) {
+            case Integer i -> testIntegerObject(evaluated, i);
+            case String s -> {
+                assertThat(evaluated)
+                    .withFailMessage("object is not Error. got=%s", evaluated)
+                    .isInstanceOf(MonkeyError.class);
+
+                final var err = (MonkeyError) evaluated;
+
+                assertThat(err.message())
+                    .withFailMessage("wrong error message. expected=%s, got=%s", s, err.message())
+                    .isEqualTo(s);
+            }
+            default -> fail("Invalid expected value");
+        }
     }
 
     @Test
