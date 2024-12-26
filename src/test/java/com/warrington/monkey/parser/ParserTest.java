@@ -156,6 +156,23 @@ class ParserTest {
     }
 
     @Test
+    void testParsingEmptyArrayLiteral() {
+       final var input = "[]";
+
+        var expression = ((ExpressionStatement) testParse(input).getFirst()).getExpression();
+
+        assertThat(expression)
+            .withFailMessage("exp not ArrayLiteral. got=%s", expression)
+            .isInstanceOf(ArrayLiteral.class);
+
+        var array = (ArrayLiteral) expression;
+
+        assertThat(array.elements().size())
+            .withFailMessage("array.elements().size() is not 0. got=%d", array.elements().size())
+            .isEqualTo(0);
+    }
+
+    @Test
     void testParsingArrayLiteral() {
         final var input = "[1, 2 * 2, 3 + 3]";
 
