@@ -1,27 +1,9 @@
 package com.warrington.monkey.lexer;
 
-import static com.warrington.monkey.token.TokenType.ASSIGN;
-import static com.warrington.monkey.token.TokenType.ASTERISK;
-import static com.warrington.monkey.token.TokenType.BANG;
-import static com.warrington.monkey.token.TokenType.COMMA;
-import static com.warrington.monkey.token.TokenType.EOF;
-import static com.warrington.monkey.token.TokenType.EQ;
-import static com.warrington.monkey.token.TokenType.GT;
-import static com.warrington.monkey.token.TokenType.ILLEGAL;
-import static com.warrington.monkey.token.TokenType.INT;
-import static com.warrington.monkey.token.TokenType.LPAREN;
-import static com.warrington.monkey.token.TokenType.LSQUIRLY;
-import static com.warrington.monkey.token.TokenType.LT;
-import static com.warrington.monkey.token.TokenType.MINUS;
-import static com.warrington.monkey.token.TokenType.NOT_EQ;
-import static com.warrington.monkey.token.TokenType.PLUS;
-import static com.warrington.monkey.token.TokenType.RPAREN;
-import static com.warrington.monkey.token.TokenType.RSQUIRLY;
-import static com.warrington.monkey.token.TokenType.SEMICOLON;
-import static com.warrington.monkey.token.TokenType.SLASH;
-
 import com.warrington.monkey.token.Token;
 import com.warrington.monkey.token.TokenType;
+
+import static com.warrington.monkey.token.TokenType.*;
 
 public class Lexer {
 
@@ -109,6 +91,9 @@ public class Lexer {
             case '>':
                 token = new Token(GT, ch);
                 break;
+            case '"':
+                token = new Token(STRING, readString());
+                break;
             case '\0':
                 token = new Token(EOF, "");
                 break;
@@ -136,6 +121,19 @@ public class Lexer {
         } else {
             return input.charAt(readPosition);
         }
+    }
+
+    private String readString() {
+        assert ch == '"' : "String should start with '\"'. got=%c".formatted(ch);
+
+        final int startPosition = position + 1;
+
+        // do/while to skip the first quote character
+        do {
+            readChar();
+        } while (ch != '"' && ch != '\0');
+
+        return input.substring(startPosition, position);
     }
 
     private String readIdentifier() {
@@ -185,9 +183,9 @@ public class Lexer {
 
     private boolean isWhitespace(char ch) {
         return ch == ' '
-                || ch == '\t'
-                || ch == '\n'
-                || ch == '\r';
+            || ch == '\t'
+            || ch == '\n'
+            || ch == '\r';
     }
 
 }

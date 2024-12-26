@@ -70,6 +70,12 @@ class EvaluatorTest {
                     }
                     """,
                 "unknown operator: BOOLEAN + BOOLEAN"
+            ),
+            Arguments.of(
+                """
+                    "Hello" - "World"
+                    """,
+                    "unknown operator: STRING - STRING"
             )
         );
     }
@@ -104,6 +110,42 @@ class EvaluatorTest {
     void testEvalIntegerExpression(String input, long expected) {
         MonkeyObject evaluated = testEval(input);
         testIntegerObject(evaluated, expected);
+    }
+
+    @Test
+    void testStringConcatenation() {
+        final var input = """
+            "Hello" + " " + "World!";
+            """;
+
+        MonkeyObject evaluated = testEval(input);
+
+        assertThat(evaluated)
+            .withFailMessage("object is not Str. got=%s.".formatted(evaluated.toString()))
+            .isInstanceOf(Str.class);
+
+        final var str = (Str) evaluated;
+
+        assertThat(str.value())
+            .withFailMessage("value is not correct. want=%s, got=%s.".formatted("Hello World!", str.value()))
+            .isEqualTo("Hello World!");
+    }
+
+    @Test
+    void testStringLiteral() {
+        final var input = "\"Hello World!\"";
+
+        MonkeyObject evaluated = testEval(input);
+
+        assertThat(evaluated)
+            .withFailMessage("object is not Str. got=%s.".formatted(evaluated.type()))
+            .isInstanceOf(Str.class);
+
+        final var str = (Str) evaluated;
+
+        assertThat(str.value())
+            .withFailMessage("value is not correct. want=%s, got=%s.".formatted("Hello World!", str.value()))
+            .isEqualTo("Hello World!");
     }
 
     @ParameterizedTest

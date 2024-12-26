@@ -44,6 +44,7 @@ public class Evaluator {
 
             // Expressions
             case IntegerLiteral il -> new Int(il.value());
+            case StringLiteral sl -> new Str(sl.value());
             case MonkeyBoolean mb -> nativeBoolToBooleanObject(mb.value());
             case PrefixExpression pe -> {
                 MonkeyObject right = eval(pe.right(), env);
@@ -202,11 +203,22 @@ public class Evaluator {
             return evalBooleanInfixExpression(operator, (Bool) left, (Bool) right);
         }
 
+        if (left.type() == ObjectType.STRING && right.type() == ObjectType.STRING) {
+            return evalStringInfixExpression(operator, (Str) left, (Str) right);
+        }
+
         if (left.type() != right.type()) {
             return newError("type mismatch: %s %s %s", left.type(), operator, right.type());
         }
 
         return newError("unknown operator: %s %s %s", left.type(), operator, right.type());
+    }
+
+    private static MonkeyObject evalStringInfixExpression(String operator, Str left, Str right) {
+        return switch (operator) {
+            case "+" -> new Str(left.value() + right.value());
+            default -> newError("unknown operator: %s %s %s", left.type(), operator, right.type());
+        };
     }
 
     private static MonkeyObject evalBooleanInfixExpression(String operator, Bool left, Bool right) {
