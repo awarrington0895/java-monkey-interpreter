@@ -129,7 +129,6 @@ public class Lexer {
         final int startPosition = position + 1;
 
         // do/while to skip the first quote character
-        // TODO: Double check this.  Not explicitly checking for end quote.
         do {
             readChar();
         } while (ch != '"' && ch != '\0');
