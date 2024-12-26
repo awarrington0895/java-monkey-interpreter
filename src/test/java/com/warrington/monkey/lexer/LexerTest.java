@@ -32,6 +32,7 @@ class LexerTest {
         10 != 9;
         "foobar"
         "foo bar"
+        "tellme!"
         """;
 
     @Test
@@ -114,6 +115,7 @@ class LexerTest {
             new Token(SEMICOLON, ";"),
             new Token(STRING, "foobar"),
             new Token(STRING, "foo bar"),
+            new Token(STRING, "tellme!"),
             new Token(EOF, ""));
 
         Token token = null;

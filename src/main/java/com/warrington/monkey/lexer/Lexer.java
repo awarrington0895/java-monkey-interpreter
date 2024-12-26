@@ -132,7 +132,7 @@ public class Lexer {
         // TODO: Double check this.  Not explicitly checking for end quote.
         do {
             readChar();
-        } while (isLetter(ch) || isWhitespace(ch));
+        } while (ch != '"' && ch != '\0');
 
         return input.substring(startPosition, position);
     }
