@@ -233,12 +233,12 @@ public class Parser {
     }
 
     private Expression parseIntegerLiteral() {
-        int value;
+        long value;
 
         try {
-            value = Integer.parseInt(curToken.literal());
+            value = Long.parseLong(curToken.literal());
         } catch (NumberFormatException ex) {
-            errors.add("could not parse %s as integer".formatted(curToken.literal()));
+            errors.add("could not parse %s as integer (long)".formatted(curToken.literal()));
 
             return null;
         }

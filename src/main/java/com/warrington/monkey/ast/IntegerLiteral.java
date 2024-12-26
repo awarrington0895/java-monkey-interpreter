@@ -2,16 +2,10 @@ package com.warrington.monkey.ast;
 
 import com.warrington.monkey.token.Token;
 
-public class IntegerLiteral implements Expression {
-    private Token token;
-    private int value;
-
-    public IntegerLiteral(Token token, int value) {
-        this.token = token;
-        this.value = value;
-    }
-
-
+public record IntegerLiteral(
+    Token token,
+    long value
+) implements Expression {
     @Override
     public String tokenLiteral() {
         return token.literal();
@@ -21,9 +15,4 @@ public class IntegerLiteral implements Expression {
     public String toString() {
         return token.literal();
     }
-
-    public int value() {
-        return value;
-    }
-    
 }
