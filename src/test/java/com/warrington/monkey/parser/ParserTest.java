@@ -90,6 +90,8 @@ class ParserTest {
         "!(true == true),(!(true == true))",
         "a + add(b * c) + d,((a + add((b * c))) + d)",
         "add(a + b + c * d / f + g),add((((a + b) + ((c * d) / f)) + g))",
+        "'a * [1, 2, 3, 4][b * c] * d','((a * ([1,2,3,4][(b * c)])) * d)'",
+        "'add(a * b[2], b[1], 2 * [1, 2][1])','add((a * (b[2])), (b[1]), (2 * ([1,2][1])))'",
     })
     void testOperatorPrecedenceParsing(String input, String expected) {
 
@@ -170,6 +172,25 @@ class ParserTest {
         assertThat(array.elements().size())
             .withFailMessage("array.elements().size() is not 0. got=%d", array.elements().size())
             .isEqualTo(0);
+    }
+
+    @Test
+    void testParsingIndexExpression() {
+       final var input = "myArray[1 + 1]";
+
+       List<Statement> stmts = testParse(input);
+
+       ExpressionStatement expStmt = (ExpressionStatement) stmts.getFirst();
+
+       assertThat(expStmt.getExpression())
+           .withFailMessage("exp not IndexExpression. got=%s", expStmt.getExpression().getClass())
+           .isInstanceOf(IndexExpression.class);
+
+       var indexExp = (IndexExpression) expStmt.getExpression();
+
+       testIdentifier(indexExp.left(), "myArray");
+
+       testInfixExpression(indexExp.index(), 1, "+", 1);
     }
 
     @Test

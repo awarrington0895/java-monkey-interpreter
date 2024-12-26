@@ -13,7 +13,7 @@ import java.util.Map;
 import static com.warrington.monkey.token.TokenType.*;
 
 public class Parser {
-    private static final Map<TokenType, Precedence> precedences = Map.of(EQ, Precedence.EQUALS, NOT_EQ, Precedence.EQUALS, LT, Precedence.LESSGREATER, GT, Precedence.LESSGREATER, PLUS, Precedence.SUM, MINUS, Precedence.SUM, SLASH, Precedence.PRODUCT, ASTERISK, Precedence.PRODUCT, LPAREN, Precedence.CALL);
+    private static final Map<TokenType, Precedence> precedences = Map.of(EQ, Precedence.EQUALS, NOT_EQ, Precedence.EQUALS, LT, Precedence.LESSGREATER, GT, Precedence.LESSGREATER, PLUS, Precedence.SUM, MINUS, Precedence.SUM, SLASH, Precedence.PRODUCT, ASTERISK, Precedence.PRODUCT, LPAREN, Precedence.CALL, LBRACKET, Precedence.INDEX);
 
     private final Lexer lexer;
     private final List<String> errors = new ArrayList<>();
@@ -50,6 +50,7 @@ public class Parser {
         registerInfix(NOT_EQ, this::parseInfixExpression);
         registerInfix(LT, this::parseInfixExpression);
         registerInfix(GT, this::parseInfixExpression);
+        registerInfix(LBRACKET, this::parseIndexExpression);
         registerInfix(LPAREN, this::parseCallExpression);
 
         nextToken();
@@ -407,6 +408,20 @@ public class Parser {
         }
 
         return new BlockStatement(startToken, statements);
+    }
+
+    private Expression parseIndexExpression(Expression left) {
+        final Token startToken = curToken;
+
+        nextToken();
+
+        Expression index = parseExpression(Precedence.LOWEST);
+
+        if (!expectPeek(RBRACKET)) {
+            return null;
+        }
+
+        return new IndexExpression(startToken, left, index);
     }
 
     private Expression parseInfixExpression(Expression left) {
