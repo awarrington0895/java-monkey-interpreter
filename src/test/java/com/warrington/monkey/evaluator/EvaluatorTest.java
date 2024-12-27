@@ -10,6 +10,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static com.warrington.monkey.evaluator.Evaluator.NULL;
@@ -177,7 +179,11 @@ class EvaluatorTest {
             Arguments.of("last([10, 15, 20])", 20L),
             Arguments.of("last([10])", 10L),
             Arguments.of("last([])", null),
-            Arguments.of("last(1)", "argument to 'last' not supported, got INTEGER")
+            Arguments.of("last(1)", "argument to 'last' not supported, got INTEGER"),
+            Arguments.of("rest([10, 15, 20])", List.of(15L, 20L)),
+            Arguments.of("rest([10])", Collections.emptyList()),
+            Arguments.of("rest([])", null),
+            Arguments.of("rest(\"test\")", "argument to 'rest' not supported, got STRING")
         );
     }
 
@@ -205,7 +211,8 @@ class EvaluatorTest {
                     .withFailMessage("wrong error message. expected=%s, got=%s", s, err.message())
                     .isEqualTo(s);
             }
-            default -> fail("Invalid expected value");
+            case List list -> testArrayObject(evaluated, list);
+            default -> fail("Unsupported expected value");
         }
     }
 
@@ -411,6 +418,18 @@ class EvaluatorTest {
         assertThat(result.value())
             .withFailMessage("object has wrong value. got=%s, want=%s", result.value(), expected)
             .isEqualTo(expected);
+    }
+
+    private void testArrayObject(MonkeyObject obj, List expected) {
+        Array result = (Array) obj;
+
+        assertThat(result.elements().size())
+            .withFailMessage("wrong number of elements in array. want=%d, got=%d", expected.size(), result.elements().size())
+            .isEqualTo(expected.size());
+
+        for (int i = 0; i < expected.size(); i++) {
+            testIntegerObject(result.elements().get(i), (Long) expected.get(i));
+        }
     }
 
 }

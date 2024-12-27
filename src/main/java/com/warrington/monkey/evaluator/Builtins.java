@@ -10,7 +10,8 @@ public class Builtins {
     private static final Map<String, Builtin> builtins = Map.of(
         "len", new Builtin(Builtins::len),
         "first", new Builtin(Builtins::first),
-        "last", new Builtin(Builtins::last)
+        "last", new Builtin(Builtins::last),
+        "rest", new Builtin(Builtins::rest)
     );
 
     private static MonkeyObject len(MonkeyObject... args) {
@@ -45,6 +46,22 @@ public class Builtins {
             case Array a -> a.elements().isEmpty() ? NULL : a.elements().getLast();
             default -> Evaluator.newError("argument to 'last' not supported, got %s", args[0].type());
         };
+    }
+
+    private static MonkeyObject rest(MonkeyObject... args) {
+        if (args.length != 1) {
+            return Evaluator.newError("wrong number of arguments. got=%d, want=1", args.length);
+        }
+
+        if (!(args[0] instanceof Array array)) {
+            return Evaluator.newError("argument to 'rest' not supported, got %s", args[0].type());
+        }
+
+        if (array.elements().isEmpty()) {
+            return NULL;
+        }
+
+        return new Array(array.elements().subList(1, array.elements().size()));
     }
 
     public static Builtin get(String name) {
