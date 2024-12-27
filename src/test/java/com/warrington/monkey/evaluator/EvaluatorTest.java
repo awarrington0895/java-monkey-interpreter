@@ -163,14 +163,17 @@ class EvaluatorTest {
 
     private static Stream<Arguments> provideBuiltins() {
         return Stream.of(
-            Arguments.of("len(\"\")", 0),
-            Arguments.of("len(\"four\")", 4),
-            Arguments.of("len(\"hello world\")", 11),
+            Arguments.of("len(\"\")", 0L),
+            Arguments.of("len(\"four\")", 4L),
+            Arguments.of("len(\"hello world\")", 11L),
             Arguments.of("len(1)", "argument to 'len' not supported, got INTEGER"),
             Arguments.of("len(\"one\", \"two\")", "wrong number of arguments. got=2, want=1"),
-            Arguments.of("len([1, 2, 3])", 3),
-            Arguments.of("len([])", 0),
-            Arguments.of("let a = [1+1, 2]; len(a)", 2)
+            Arguments.of("len([1, 2, 3])", 3L),
+            Arguments.of("len([])", 0L),
+            Arguments.of("let a = [1+1, 2]; len(a)", 2L),
+            Arguments.of("first([10, 15, 20])", 10L),
+            Arguments.of("first([])", null),
+            Arguments.of("first(1)", "argument to 'first' not supported, got INTEGER")
         );
     }
 
@@ -179,8 +182,14 @@ class EvaluatorTest {
     void testBuiltins(String input, Object expected) {
         MonkeyObject evaluated = testEval(input);
 
+        if (expected == null) {
+            testNullObject(evaluated);
+
+            return;
+        }
+
         switch(expected) {
-            case Integer i -> testIntegerObject(evaluated, i);
+            case Long i -> testIntegerObject(evaluated, i);
             case String s -> {
                 assertThat(evaluated)
                     .withFailMessage("object is not Error. got=%s", evaluated)
