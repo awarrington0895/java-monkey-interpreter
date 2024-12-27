@@ -84,7 +84,7 @@ public class Evaluator {
                     yield elements.getFirst();
                 }
 
-                yield new Array(evalExpressions(al.elements(), env));
+                yield new Array(elements);
             }
             case CallExpression ce -> {
                 MonkeyObject function = eval(ce.function(), env);
