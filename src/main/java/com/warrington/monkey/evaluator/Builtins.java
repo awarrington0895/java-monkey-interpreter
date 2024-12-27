@@ -2,6 +2,9 @@ package com.warrington.monkey.evaluator;
 
 import com.warrington.monkey.object.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static com.warrington.monkey.evaluator.Evaluator.NULL;
@@ -11,7 +14,8 @@ public class Builtins {
         "len", new Builtin(Builtins::len),
         "first", new Builtin(Builtins::first),
         "last", new Builtin(Builtins::last),
-        "rest", new Builtin(Builtins::rest)
+        "rest", new Builtin(Builtins::rest),
+        "push", new Builtin(Builtins::push)
     );
 
     private static MonkeyObject len(MonkeyObject... args) {
@@ -53,7 +57,7 @@ public class Builtins {
             return Evaluator.newError("wrong number of arguments. got=%d, want=1", args.length);
         }
 
-        if (!(args[0] instanceof Array(java.util.List<MonkeyObject> elements))) {
+        if (!(args[0] instanceof Array(List<MonkeyObject> elements))) {
             return Evaluator.newError("argument to 'rest' not supported, got %s", args[0].type());
         }
 
@@ -62,6 +66,22 @@ public class Builtins {
         }
 
         return new Array(elements.subList(1, elements.size()));
+    }
+
+    private static MonkeyObject push(MonkeyObject... args) {
+        if (args.length != 2) {
+            return Evaluator.newError("wrong number of arguments. got=%d, want=2", args.length);
+        }
+
+        if (!(args[0] instanceof Array(List<MonkeyObject> elements))) {
+            return Evaluator.newError("first argument to 'push' must be ARRAY, got %s", args[0].type());
+        }
+
+        var newList = new ArrayList<>(elements);
+
+        newList.add(args[1]);
+
+        return new Array(Collections.unmodifiableList(newList));
     }
 
     public static Builtin get(String name) {

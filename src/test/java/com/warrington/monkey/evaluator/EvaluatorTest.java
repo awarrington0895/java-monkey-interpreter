@@ -195,7 +195,10 @@ class EvaluatorTest {
                     a;
                     """,
                 List.of(1L, 2L, 3L)
-            )
+            ),
+            Arguments.of("push([], 1)", List.of(1L)),
+            Arguments.of("push([1], 2)", List.of(1L, 2L)),
+            Arguments.of("push(1, [2])", "first argument to 'push' must be ARRAY, got INTEGER")
         );
     }
 
