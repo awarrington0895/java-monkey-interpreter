@@ -1,11 +1,10 @@
 package com.warrington.monkey.evaluator;
 
-import com.warrington.monkey.object.Builtin;
-import com.warrington.monkey.object.Int;
-import com.warrington.monkey.object.MonkeyObject;
-import com.warrington.monkey.object.Str;
+import com.warrington.monkey.object.*;
 
 import java.util.Map;
+
+import static com.warrington.monkey.evaluator.Evaluator.NULL;
 
 public class Builtins {
     private static final Map<String, Builtin> builtins = Map.of(
@@ -19,6 +18,7 @@ public class Builtins {
 
         return switch (args[0]) {
             case Str s -> new Int(s.value().length());
+            case Array a -> new Int(a.elements().size());
             default -> Evaluator.newError("argument to 'len' not supported, got %s", args[0].type());
         };
     }

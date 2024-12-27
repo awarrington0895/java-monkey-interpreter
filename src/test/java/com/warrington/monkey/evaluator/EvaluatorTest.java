@@ -167,7 +167,10 @@ class EvaluatorTest {
             Arguments.of("len(\"four\")", 4),
             Arguments.of("len(\"hello world\")", 11),
             Arguments.of("len(1)", "argument to 'len' not supported, got INTEGER"),
-            Arguments.of("len(\"one\", \"two\")", "wrong number of arguments. got=2, want=1")
+            Arguments.of("len(\"one\", \"two\")", "wrong number of arguments. got=2, want=1"),
+            Arguments.of("len([1, 2, 3])", 3),
+            Arguments.of("len([])", 0),
+            Arguments.of("let a = [1+1, 2]; len(a)", 2)
         );
     }
 
