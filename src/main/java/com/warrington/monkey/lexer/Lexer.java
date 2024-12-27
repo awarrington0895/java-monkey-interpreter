@@ -44,6 +44,9 @@ public class Lexer {
             case ';':
                 token = new Token(SEMICOLON, ch);
                 break;
+            case ':':
+                token = new Token(COLON, ch);
+                break;
             case '(':
                 token = new Token(LPAREN, ch);
                 break;
