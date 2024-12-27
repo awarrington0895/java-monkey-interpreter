@@ -9,7 +9,8 @@ import static com.warrington.monkey.evaluator.Evaluator.NULL;
 public class Builtins {
     private static final Map<String, Builtin> builtins = Map.of(
         "len", new Builtin(Builtins::len),
-        "first", new Builtin(Builtins::first)
+        "first", new Builtin(Builtins::first),
+        "last", new Builtin(Builtins::last)
     );
 
     private static MonkeyObject len(MonkeyObject... args) {
@@ -32,6 +33,17 @@ public class Builtins {
         return switch (args[0]) {
             case Array a -> a.elements().isEmpty() ? NULL : a.elements().getFirst();
             default -> Evaluator.newError("argument to 'first' not supported, got %s", args[0].type());
+        };
+    }
+
+    private static MonkeyObject last(MonkeyObject... args) {
+        if (args.length != 1) {
+            return Evaluator.newError("wrong number of arguments. got=%d, want=1", args.length);
+        }
+
+        return switch (args[0]) {
+            case Array a -> a.elements().isEmpty() ? NULL : a.elements().getLast();
+            default -> Evaluator.newError("argument to 'last' not supported, got %s", args[0].type());
         };
     }
 

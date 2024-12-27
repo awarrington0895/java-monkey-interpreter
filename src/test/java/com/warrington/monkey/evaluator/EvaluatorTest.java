@@ -173,7 +173,11 @@ class EvaluatorTest {
             Arguments.of("let a = [1+1, 2]; len(a)", 2L),
             Arguments.of("first([10, 15, 20])", 10L),
             Arguments.of("first([])", null),
-            Arguments.of("first(1)", "argument to 'first' not supported, got INTEGER")
+            Arguments.of("first(1)", "argument to 'first' not supported, got INTEGER"),
+            Arguments.of("last([10, 15, 20])", 20L),
+            Arguments.of("last([10])", 10L),
+            Arguments.of("last([])", null),
+            Arguments.of("last(1)", "argument to 'last' not supported, got INTEGER")
         );
     }
 
