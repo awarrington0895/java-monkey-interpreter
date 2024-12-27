@@ -100,6 +100,29 @@ public class Evaluator {
 
                 yield applyFunction(function, args);
             }
+            case IndexExpression ie -> {
+                MonkeyObject left = eval(ie.left(), env);
+                MonkeyObject index = eval(ie.index(), env);
+
+                if (isError(left)) {
+                    yield left;
+                }
+
+                if (isError(index)) {
+                    yield index;
+                }
+
+                if (left instanceof Array(List<MonkeyObject> elements) && index instanceof Int(long value)) {
+                   if (value >= elements.size() || value < 0) {
+                       yield NULL;
+                   }
+
+                    yield elements.get((int) value);
+                }
+
+                yield NULL;
+
+            }
             default -> null;
         };
     }

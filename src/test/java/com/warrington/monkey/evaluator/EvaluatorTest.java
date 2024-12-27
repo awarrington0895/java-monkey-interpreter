@@ -113,6 +113,33 @@ class EvaluatorTest {
         testIntegerObject(evaluated, expected);
     }
 
+    private static Stream<Arguments> provideArrayIndexExpressions() {
+        return Stream.of(
+            Arguments.of("[1, 2, 3][0]", 1L),
+            Arguments.of("[1, 2, 3][1]", 2L),
+            Arguments.of("[1, 2, 3][2]", 3L),
+            Arguments.of("let i = 0; [1][i];", 1L),
+            Arguments.of("[1, 2, 3][1 + 1];", 3L),
+            Arguments.of("let myArray = [1, 2, 3]; myArray[2];", 3L),
+            Arguments.of("let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 6L),
+            Arguments.of("let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", 2L),
+            Arguments.of("[1, 2, 3][3]", null),
+            Arguments.of("[1, 2, 3][-1]", null)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideArrayIndexExpressions")
+    void testArrayIndexExpressions(String input, Long expected) {
+        MonkeyObject evaluated = testEval(input);
+
+        if (evaluated instanceof Int i) {
+            testIntegerObject(i, expected);
+        } else {
+            testNullObject(evaluated);
+        }
+    }
+
     @Test
     void testArrayLiterals() {
         final var input = "[1, 2 * 2, 3 + 3]";
