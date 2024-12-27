@@ -183,7 +183,19 @@ class EvaluatorTest {
             Arguments.of("rest([10, 15, 20])", List.of(15L, 20L)),
             Arguments.of("rest([10])", Collections.emptyList()),
             Arguments.of("rest([])", null),
-            Arguments.of("rest(\"test\")", "argument to 'rest' not supported, got STRING")
+            Arguments.of("rest(\"test\")", "argument to 'rest' not supported, got STRING"),
+
+            // Test that rest does not modify original array
+            Arguments.of(
+                """
+                    let a = [1, 2, 3];
+                    
+                    let b = rest(a);
+                    
+                    a;
+                    """,
+                List.of(1L, 2L, 3L)
+            )
         );
     }
 

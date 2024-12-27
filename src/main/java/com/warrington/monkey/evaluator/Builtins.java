@@ -53,15 +53,15 @@ public class Builtins {
             return Evaluator.newError("wrong number of arguments. got=%d, want=1", args.length);
         }
 
-        if (!(args[0] instanceof Array array)) {
+        if (!(args[0] instanceof Array(java.util.List<MonkeyObject> elements))) {
             return Evaluator.newError("argument to 'rest' not supported, got %s", args[0].type());
         }
 
-        if (array.elements().isEmpty()) {
+        if (elements.isEmpty()) {
             return NULL;
         }
 
-        return new Array(array.elements().subList(1, array.elements().size()));
+        return new Array(elements.subList(1, elements.size()));
     }
 
     public static Builtin get(String name) {

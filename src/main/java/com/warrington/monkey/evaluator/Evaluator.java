@@ -4,6 +4,7 @@ import com.warrington.monkey.ast.*;
 import com.warrington.monkey.object.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Evaluator {
@@ -171,7 +172,7 @@ public class Evaluator {
             result.add(evaluated);
         }
 
-        return result;
+        return Collections.unmodifiableList(result);
     }
 
     private static boolean isError(MonkeyObject object) {
