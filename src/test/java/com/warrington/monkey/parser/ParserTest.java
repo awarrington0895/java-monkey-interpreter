@@ -1,25 +1,73 @@
 package com.warrington.monkey.parser;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Stream;
-
 import com.warrington.monkey.ast.*;
+import com.warrington.monkey.lexer.Lexer;
+import com.warrington.monkey.token.Token;
+import com.warrington.monkey.token.TokenType;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
-
-import com.warrington.monkey.lexer.Lexer;
-import com.warrington.monkey.token.Token;
-import com.warrington.monkey.token.TokenType;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
+
 class ParserTest {
+
+    private static Stream<Arguments> provideInfixExpressions() {
+        return Stream.of(
+            Arguments.of("5 + 5", 5, "+", 5),
+            Arguments.of("5 - 5", 5, "-", 5),
+            Arguments.of("5 * 5", 5, "*", 5),
+            Arguments.of("5 / 5", 5, "/", 5),
+            Arguments.of("5 > 5", 5, ">", 5),
+            Arguments.of("5 < 5", 5, "<", 5),
+            Arguments.of("5 == 5", 5, "==", 5),
+            Arguments.of("5 != 5", 5, "!=", 5),
+            Arguments.of("true == true", true, "==", true),
+            Arguments.of("true != false", true, "!=", false),
+            Arguments.of("false == false", false, "==", false)
+        );
+    }
+
+    private static Stream<Arguments> providePrefixExpressions() {
+        return Stream.of(
+            Arguments.of("!5;", "!", 5),
+            Arguments.of("-15;", "-", 15),
+            Arguments.of("!true;", "!", true),
+            Arguments.of("!false;", "!", false)
+        );
+    }
+
+    private static Stream<Arguments> provideFunctionParameters() {
+        return Stream.of(
+            Arguments.of("fn() {};", Collections.emptyList()),
+            Arguments.of("fn(x) {};", List.of("x")),
+            Arguments.of("fn(x, y, z) {};", List.of("x", "y", "z"))
+        );
+    }
+
+    private static Stream<Arguments> provideLetStatements() {
+        return Stream.of(
+            Arguments.of("let x = 5;", "x", 5),
+            Arguments.of("let y = true;", "y", true),
+            Arguments.of("let foobar = y", "foobar", "y")
+        );
+    }
+
+    private static Stream<Arguments> provideReturnStatements() {
+        return Stream.of(
+            Arguments.of("return 5;", 5),
+            Arguments.of("return true;", true),
+            Arguments.of("return foobar;", "foobar")
+        );
+    }
 
     @ParameterizedTest
     @CsvSource({
@@ -42,6 +90,8 @@ class ParserTest {
         "!(true == true),(!(true == true))",
         "a + add(b * c) + d,((a + add((b * c))) + d)",
         "add(a + b + c * d / f + g),add((((a + b) + ((c * d) / f)) + g))",
+        "'a * [1, 2, 3, 4][b * c] * d','((a * ([1,2,3,4][(b * c)])) * d)'",
+        "'add(a * b[2], b[1], 2 * [1, 2][1])','add((a * (b[2])), (b[1]), (2 * ([1,2][1])))'",
     })
     void testOperatorPrecedenceParsing(String input, String expected) {
 
@@ -56,23 +106,6 @@ class ParserTest {
         assertThat(actual)
             .isEqualTo(expected);
     }
-
-    private static Stream<Arguments> provideInfixExpressions() {
-        return Stream.of(
-            Arguments.of("5 + 5", 5, "+", 5),
-            Arguments.of("5 - 5", 5, "-", 5),
-            Arguments.of("5 * 5", 5, "*", 5),
-            Arguments.of("5 / 5", 5, "/", 5),
-            Arguments.of("5 > 5", 5, ">", 5),
-            Arguments.of("5 < 5", 5, "<", 5),
-            Arguments.of("5 == 5", 5, "==", 5),
-            Arguments.of("5 != 5", 5, "!=", 5),
-            Arguments.of("true == true", true, "==", true),
-            Arguments.of("true != false", true, "!=", false),
-            Arguments.of("false == false", false, "==", false)
-        );
-    }
-
 
     @ParameterizedTest
     @MethodSource("provideInfixExpressions")
@@ -94,15 +127,6 @@ class ParserTest {
         ExpressionStatement stmt = (ExpressionStatement) statements.getFirst();
 
         testInfixExpression(stmt.getExpression(), left, operator, right);
-    }
-
-    private static Stream<Arguments> providePrefixExpressions() {
-        return Stream.of(
-            Arguments.of("!5;", "!", 5),
-            Arguments.of("-15;", "-", 15),
-            Arguments.of("!true;", "!", true),
-            Arguments.of("!false;", "!", false)
-        );
     }
 
     @ParameterizedTest
@@ -131,6 +155,75 @@ class ParserTest {
             .isEqualTo(operator);
 
         testLiteralExpression(exp.right(), value);
+    }
+
+    @Test
+    void testParsingEmptyArrayLiteral() {
+       final var input = "[]";
+
+        var expression = ((ExpressionStatement) testParse(input).getFirst()).getExpression();
+
+        assertThat(expression)
+            .withFailMessage("exp not ArrayLiteral. got=%s", expression)
+            .isInstanceOf(ArrayLiteral.class);
+
+        var array = (ArrayLiteral) expression;
+
+        assertThat(array.elements().size())
+            .withFailMessage("array.elements().size() is not 0. got=%d", array.elements().size())
+            .isEqualTo(0);
+    }
+
+    @Test
+    void testParsingIndexExpression() {
+       final var input = "myArray[1 + 1]";
+
+       List<Statement> stmts = testParse(input);
+
+       ExpressionStatement expStmt = (ExpressionStatement) stmts.getFirst();
+
+       assertThat(expStmt.getExpression())
+           .withFailMessage("exp not IndexExpression. got=%s", expStmt.getExpression().getClass())
+           .isInstanceOf(IndexExpression.class);
+
+       var indexExp = (IndexExpression) expStmt.getExpression();
+
+       testIdentifier(indexExp.left(), "myArray");
+
+       testInfixExpression(indexExp.index(), 1, "+", 1);
+    }
+
+    @Test
+    void testParsingArrayLiteral() {
+        final var input = "[1, 2 * 2, 3 + 3]";
+
+        var expression = ((ExpressionStatement) testParse(input).getFirst()).getExpression();
+
+        assertThat(expression)
+            .withFailMessage("exp not ArrayLiteral. got=%s", expression)
+            .isInstanceOf(ArrayLiteral.class);
+
+        var array = (ArrayLiteral) expression;
+
+        assertThat(array.elements().size())
+            .withFailMessage("array.elements().size() is not 3. got=%d", array.elements().size())
+            .isEqualTo(3);
+
+        testIntegerLiteral(array.elements().getFirst(), 1);
+        testInfixExpression(array.elements().get(1), 2, "*", 2);
+        testInfixExpression(array.elements().get(2), 3, "+", 3);
+    }
+
+    List<Statement> testParse(String input) {
+        final var lexer = new Lexer(input);
+
+        final var parser = new Parser(lexer);
+
+        final Program program = parser.parseProgram();
+
+        checkParserErrors(parser);
+
+        return program.getStatements();
     }
 
     @Test
@@ -312,14 +405,6 @@ class ParserTest {
         }
     }
 
-    private static Stream<Arguments> provideFunctionParameters() {
-        return Stream.of(
-            Arguments.of("fn() {};", Collections.emptyList()),
-            Arguments.of("fn(x) {};", List.of("x")),
-            Arguments.of("fn(x, y, z) {};", List.of("x", "y", "z"))
-        );
-    }
-
     @Test
     void testCallExpressionParsing() {
         final var input = "add(1, 2 * 3, 4 + 5);";
@@ -439,14 +524,6 @@ class ParserTest {
         testLiteralExpression(stmt.getExpression(), true);
     }
 
-    private static Stream<Arguments> provideLetStatements() {
-        return Stream.of(
-            Arguments.of("let x = 5;", "x", 5),
-            Arguments.of("let y = true;", "y", true),
-            Arguments.of("let foobar = y", "foobar", "y")
-        );
-    }
-
     @ParameterizedTest
     @MethodSource("provideLetStatements")
     void testLetStatements(String input, String expectedIdentifier, Object expectedValue) {
@@ -493,14 +570,6 @@ class ParserTest {
         if (!program.toString().equals("let myVar = anotherVar;")) {
             fail("program.string() wrong. got=%s".formatted(program.toString()));
         }
-    }
-
-    private static Stream<Arguments> provideReturnStatements() {
-        return Stream.of(
-            Arguments.of("return 5;", 5),
-            Arguments.of("return true;", true),
-            Arguments.of("return foobar;", "foobar")
-        );
     }
 
     @ParameterizedTest

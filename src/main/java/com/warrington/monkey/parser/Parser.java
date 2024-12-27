@@ -13,7 +13,7 @@ import java.util.Map;
 import static com.warrington.monkey.token.TokenType.*;
 
 public class Parser {
-    private static final Map<TokenType, Precedence> precedences = Map.of(EQ, Precedence.EQUALS, NOT_EQ, Precedence.EQUALS, LT, Precedence.LESSGREATER, GT, Precedence.LESSGREATER, PLUS, Precedence.SUM, MINUS, Precedence.SUM, SLASH, Precedence.PRODUCT, ASTERISK, Precedence.PRODUCT, LPAREN, Precedence.CALL);
+    private static final Map<TokenType, Precedence> precedences = Map.of(EQ, Precedence.EQUALS, NOT_EQ, Precedence.EQUALS, LT, Precedence.LESSGREATER, GT, Precedence.LESSGREATER, PLUS, Precedence.SUM, MINUS, Precedence.SUM, SLASH, Precedence.PRODUCT, ASTERISK, Precedence.PRODUCT, LPAREN, Precedence.CALL, LBRACKET, Precedence.INDEX);
 
     private final Lexer lexer;
     private final List<String> errors = new ArrayList<>();
@@ -40,6 +40,7 @@ public class Parser {
         registerPrefix(IF, this::parseIfExpression);
         registerPrefix(FUNCTION, this::parseFunctionLiteral);
         registerPrefix(STRING, this::parseStringLiteral);
+        registerPrefix(LBRACKET, this::parseArrayLiteral);
 
         registerInfix(PLUS, this::parseInfixExpression);
         registerInfix(MINUS, this::parseInfixExpression);
@@ -49,11 +50,13 @@ public class Parser {
         registerInfix(NOT_EQ, this::parseInfixExpression);
         registerInfix(LT, this::parseInfixExpression);
         registerInfix(GT, this::parseInfixExpression);
+        registerInfix(LBRACKET, this::parseIndexExpression);
         registerInfix(LPAREN, this::parseCallExpression);
 
         nextToken();
         nextToken();
     }
+
 
     void nextToken() {
         curToken = peekToken;
@@ -312,36 +315,41 @@ public class Parser {
         return parameters;
     }
 
-    private Expression parseCallExpression(Expression function) {
-        return new CallExpression(curToken, function, parseCallArguments());
+    private List<Expression> parseExpressionList(TokenType end) {
+       var list = new ArrayList<Expression>();
+
+       if (peekTokenIs(end)) {
+           nextToken();
+
+           return list;
+       }
+
+       nextToken();
+
+       list.add(parseExpression(Precedence.LOWEST));
+
+       while (peekTokenIs(COMMA)) {
+           nextToken();
+           nextToken();
+
+           list.add(parseExpression(Precedence.LOWEST));
+       }
+
+       if (!expectPeek(end)) {
+           return null;
+       }
+
+       return list;
     }
 
-    private List<Expression> parseCallArguments() {
-        assert curTokenIs(LPAREN) : "Call expressions should start with '('. got='%s'.".formatted(curToken.literal());
+    private Expression parseArrayLiteral() {
+        assert curTokenIs(LBRACKET) : "Array literal should start with LBRACKET token. got=%s".formatted(curToken);
 
-        var args = new ArrayList<Expression>();
+        return new ArrayLiteral(curToken, parseExpressionList(RBRACKET));
+    }
 
-        if (peekTokenIs(RPAREN)) {
-            nextToken();
-            return args;
-        }
-
-        nextToken();
-
-        args.add(parseExpression(Precedence.LOWEST));
-
-        while (peekTokenIs(COMMA)) {
-            nextToken();
-            nextToken();
-
-            args.add(parseExpression(Precedence.LOWEST));
-        }
-
-        if (!expectPeek(RPAREN)) {
-            return null;
-        }
-
-        return args;
+    private Expression parseCallExpression(Expression function) {
+        return new CallExpression(curToken, function, parseExpressionList(RPAREN));
     }
 
     private Expression parseIfExpression() {
@@ -400,6 +408,20 @@ public class Parser {
         }
 
         return new BlockStatement(startToken, statements);
+    }
+
+    private Expression parseIndexExpression(Expression left) {
+        final Token startToken = curToken;
+
+        nextToken();
+
+        Expression index = parseExpression(Precedence.LOWEST);
+
+        if (!expectPeek(RBRACKET)) {
+            return null;
+        }
+
+        return new IndexExpression(startToken, left, index);
     }
 
     private Expression parseInfixExpression(Expression left) {

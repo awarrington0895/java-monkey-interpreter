@@ -16,6 +16,8 @@ public enum TokenType {
     RPAREN(")"),
     LSQUIRLY("{"),
     RSQUIRLY("}"),
+    LBRACKET("["),
+    RBRACKET("]"),
     MINUS("-"),
     BANG("!"),
     ASTERISK("*"),

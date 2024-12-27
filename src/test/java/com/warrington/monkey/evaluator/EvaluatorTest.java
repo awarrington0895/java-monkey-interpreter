@@ -10,6 +10,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static com.warrington.monkey.evaluator.Evaluator.NULL;
@@ -113,13 +115,90 @@ class EvaluatorTest {
         testIntegerObject(evaluated, expected);
     }
 
+    private static Stream<Arguments> provideArrayIndexExpressions() {
+        return Stream.of(
+            Arguments.of("[1, 2, 3][0]", 1L),
+            Arguments.of("[1, 2, 3][1]", 2L),
+            Arguments.of("[1, 2, 3][2]", 3L),
+            Arguments.of("let i = 0; [1][i];", 1L),
+            Arguments.of("[1, 2, 3][1 + 1];", 3L),
+            Arguments.of("let myArray = [1, 2, 3]; myArray[2];", 3L),
+            Arguments.of("let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 6L),
+            Arguments.of("let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", 2L),
+            Arguments.of("[1, 2, 3][3]", null),
+            Arguments.of("[1, 2, 3][-1]", null)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideArrayIndexExpressions")
+    void testArrayIndexExpressions(String input, Long expected) {
+        MonkeyObject evaluated = testEval(input);
+
+        if (evaluated instanceof Int i) {
+            testIntegerObject(i, expected);
+        } else {
+            testNullObject(evaluated);
+        }
+    }
+
+    @Test
+    void testArrayLiterals() {
+        final var input = "[1, 2 * 2, 3 + 3]";
+
+        MonkeyObject evaluated = testEval(input);
+
+        assertThat(evaluated)
+            .withFailMessage("object is not Array. got=%s", evaluated.type())
+            .isInstanceOf(Array.class);
+
+        Array array = (Array) evaluated;
+
+        assertThat(array.elements().size())
+            .withFailMessage("array has wrong number of elements. got=%d", array.elements().size())
+            .isEqualTo(3);
+
+        testIntegerObject(array.elements().getFirst(), 1L);
+        testIntegerObject(array.elements().get(1), 4L);
+        testIntegerObject(array.elements().get(2), 6L);
+    }
+
     private static Stream<Arguments> provideBuiltins() {
         return Stream.of(
-            Arguments.of("len(\"\")", 0),
-            Arguments.of("len(\"four\")", 4),
-            Arguments.of("len(\"hello world\")", 11),
+            Arguments.of("len(\"\")", 0L),
+            Arguments.of("len(\"four\")", 4L),
+            Arguments.of("len(\"hello world\")", 11L),
             Arguments.of("len(1)", "argument to 'len' not supported, got INTEGER"),
-            Arguments.of("len(\"one\", \"two\")", "wrong number of arguments. got=2, want=1")
+            Arguments.of("len(\"one\", \"two\")", "wrong number of arguments. got=2, want=1"),
+            Arguments.of("len([1, 2, 3])", 3L),
+            Arguments.of("len([])", 0L),
+            Arguments.of("let a = [1+1, 2]; len(a)", 2L),
+            Arguments.of("first([10, 15, 20])", 10L),
+            Arguments.of("first([])", null),
+            Arguments.of("first(1)", "argument to 'first' not supported, got INTEGER"),
+            Arguments.of("last([10, 15, 20])", 20L),
+            Arguments.of("last([10])", 10L),
+            Arguments.of("last([])", null),
+            Arguments.of("last(1)", "argument to 'last' not supported, got INTEGER"),
+            Arguments.of("rest([10, 15, 20])", List.of(15L, 20L)),
+            Arguments.of("rest([10])", Collections.emptyList()),
+            Arguments.of("rest([])", null),
+            Arguments.of("rest(\"test\")", "argument to 'rest' not supported, got STRING"),
+
+            // Test that rest does not modify original array
+            Arguments.of(
+                """
+                    let a = [1, 2, 3];
+                    
+                    let b = rest(a);
+                    
+                    a;
+                    """,
+                List.of(1L, 2L, 3L)
+            ),
+            Arguments.of("push([], 1)", List.of(1L)),
+            Arguments.of("push([1], 2)", List.of(1L, 2L)),
+            Arguments.of("push(1, [2])", "first argument to 'push' must be ARRAY, got INTEGER")
         );
     }
 
@@ -128,8 +207,14 @@ class EvaluatorTest {
     void testBuiltins(String input, Object expected) {
         MonkeyObject evaluated = testEval(input);
 
+        if (expected == null) {
+            testNullObject(evaluated);
+
+            return;
+        }
+
         switch(expected) {
-            case Integer i -> testIntegerObject(evaluated, i);
+            case Long i -> testIntegerObject(evaluated, i);
             case String s -> {
                 assertThat(evaluated)
                     .withFailMessage("object is not Error. got=%s", evaluated)
@@ -141,7 +226,8 @@ class EvaluatorTest {
                     .withFailMessage("wrong error message. expected=%s, got=%s", s, err.message())
                     .isEqualTo(s);
             }
-            default -> fail("Invalid expected value");
+            case List list -> testArrayObject(evaluated, list);
+            default -> fail("Unsupported expected value");
         }
     }
 
@@ -347,6 +433,18 @@ class EvaluatorTest {
         assertThat(result.value())
             .withFailMessage("object has wrong value. got=%s, want=%s", result.value(), expected)
             .isEqualTo(expected);
+    }
+
+    private void testArrayObject(MonkeyObject obj, List expected) {
+        Array result = (Array) obj;
+
+        assertThat(result.elements().size())
+            .withFailMessage("wrong number of elements in array. want=%d, got=%d", expected.size(), result.elements().size())
+            .isEqualTo(expected.size());
+
+        for (int i = 0; i < expected.size(); i++) {
+            testIntegerObject(result.elements().get(i), (Long) expected.get(i));
+        }
     }
 
 }

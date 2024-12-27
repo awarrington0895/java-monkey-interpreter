@@ -4,6 +4,7 @@ import com.warrington.monkey.ast.*;
 import com.warrington.monkey.object.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Evaluator {
@@ -76,6 +77,15 @@ public class Evaluator {
 
             case Identifier i -> evalIdentifier(i, env);
             case FunctionLiteral fl -> new MonkeyFunction(fl.parameters(), fl.body(), env);
+            case ArrayLiteral al -> {
+                List<MonkeyObject> elements = evalExpressions(al.elements(), env);
+
+                if (elements.size() == 1 && isError(elements.getFirst())) {
+                    yield elements.getFirst();
+                }
+
+                yield new Array(elements);
+            }
             case CallExpression ce -> {
                 MonkeyObject function = eval(ce.function(), env);
 
@@ -90,6 +100,29 @@ public class Evaluator {
                 }
 
                 yield applyFunction(function, args);
+            }
+            case IndexExpression ie -> {
+                MonkeyObject left = eval(ie.left(), env);
+                MonkeyObject index = eval(ie.index(), env);
+
+                if (isError(left)) {
+                    yield left;
+                }
+
+                if (isError(index)) {
+                    yield index;
+                }
+
+                if (left instanceof Array(List<MonkeyObject> elements) && index instanceof Int(long value)) {
+                   if (value >= elements.size() || value < 0) {
+                       yield NULL;
+                   }
+
+                    yield elements.get((int) value);
+                }
+
+                yield NULL;
+
             }
             default -> null;
         };
@@ -139,7 +172,7 @@ public class Evaluator {
             result.add(evaluated);
         }
 
-        return result;
+        return Collections.unmodifiableList(result);
     }
 
     private static boolean isError(MonkeyObject object) {
