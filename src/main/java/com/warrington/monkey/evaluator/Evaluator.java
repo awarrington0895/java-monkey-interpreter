@@ -143,10 +143,11 @@ public class Evaluator {
     }
 
     private static MonkeyObject unwrapReturnValue(MonkeyObject object) {
-        return switch (object) {
-            case ReturnValue(MonkeyObject value) -> value;
-            default -> object;
-        };
+        if (object instanceof ReturnValue(MonkeyObject value)) {
+            return value;
+        }
+
+        return object;
     }
 
     private static Environment extendFunctionEnv(MonkeyFunction fn, List<MonkeyObject> args) {
