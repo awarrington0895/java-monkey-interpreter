@@ -41,6 +41,7 @@ public class Parser {
         registerPrefix(FUNCTION, this::parseFunctionLiteral);
         registerPrefix(STRING, this::parseStringLiteral);
         registerPrefix(LBRACKET, this::parseArrayLiteral);
+        registerPrefix(LSQUIRLY, this::parseHashLiteral);
 
         registerInfix(PLUS, this::parseInfixExpression);
         registerInfix(MINUS, this::parseInfixExpression);
@@ -186,9 +187,7 @@ public class Parser {
         this.prefixParseFns.put(token, fn);
     }
 
-    private void registerInfix(TokenType token, InfixParseFn fn) {
-        this.infixParseFns.put(token, fn);
-    }
+    private void registerInfix(TokenType token, InfixParseFn fn) { this.infixParseFns.put(token, fn); }
 
     private ExpressionStatement parseExpressionStatement() {
         final var stmt = new ExpressionStatement(curToken, parseExpression(Precedence.LOWEST));
@@ -340,6 +339,33 @@ public class Parser {
        }
 
        return list;
+    }
+
+    private Expression parseHashLiteral() {
+        assert curTokenIs(LSQUIRLY) : "Hash literal should start with LSQUIRLY token. got=%s".formatted(curToken);
+        final var initialToken = curToken;
+        final var pairs = new HashMap<Expression, Expression>();
+
+        while (!peekTokenIs(RSQUIRLY)) {
+            nextToken();
+
+            Expression key = parseExpression(Precedence.LOWEST);
+
+            expectPeek(COLON);
+            nextToken();
+
+            Expression value = parseExpression(Precedence.LOWEST);
+
+            pairs.put(key, value);
+
+            if (!peekTokenIs(RSQUIRLY)) {
+                nextToken();
+            }
+        }
+
+        nextToken();
+
+        return new HashLiteral(initialToken, pairs);
     }
 
     private Expression parseArrayLiteral() {
