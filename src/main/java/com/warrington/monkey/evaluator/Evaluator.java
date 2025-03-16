@@ -107,6 +107,10 @@ public class Evaluator {
                 MonkeyObject left = eval(ie.left(), env);
                 MonkeyObject index = eval(ie.index(), env);
 
+                if (left == null) {
+                    yield newError("unable to evaluate left side of index expression: %s", ie);
+                }
+
                 if (isError(left)) {
                     yield left;
                 }
@@ -123,7 +127,7 @@ public class Evaluator {
                     yield elements.get((int) value);
                 }
 
-                yield NULL;
+                yield newError("index operator not supported: %s", left.type());
 
             }
             default -> null;

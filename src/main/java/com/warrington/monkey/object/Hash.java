@@ -16,9 +16,9 @@ public record Hash(
         final var stringPairs = new ArrayList<String>();
 
         pairs.forEach((key, value) -> {
-            stringPairs.add("%s : %s".formatted(value.key().inspect(), value.value().inspect()));
+            stringPairs.add("%s: %s".formatted(value.key().inspect(), value.value().inspect()));
         });
 
-        return "{%s}".formatted(String.join(",", stringPairs));
+        return "{ %s }".formatted(String.join(", ", stringPairs));
     }
 }
