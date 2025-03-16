@@ -103,35 +103,54 @@ public class Evaluator {
 
                 yield applyFunction(function, args);
             }
-            case IndexExpression ie -> {
-                MonkeyObject left = eval(ie.left(), env);
-                MonkeyObject index = eval(ie.index(), env);
-
-                if (left == null) {
-                    yield newError("unable to evaluate left side of index expression: %s", ie);
-                }
-
-                if (isError(left)) {
-                    yield left;
-                }
-
-                if (isError(index)) {
-                    yield index;
-                }
-
-                if (left instanceof Array(List<MonkeyObject> elements) && index instanceof Int(long value)) {
-                   if (value >= elements.size() || value < 0) {
-                       yield NULL;
-                   }
-
-                    yield elements.get((int) value);
-                }
-
-                yield newError("index operator not supported: %s", left.type());
-
-            }
+            case IndexExpression ie -> evalIndexExpression(ie, env);
             default -> null;
         };
+    }
+
+    private static MonkeyObject evalIndexExpression(IndexExpression ie, Environment env) {
+        MonkeyObject left = eval(ie.left(), env);
+        MonkeyObject index = eval(ie.index(), env);
+
+        if (left == null) {
+            return newError("unable to evaluate left side of index expression: %s", ie);
+        }
+
+        if (index == null) {
+            return newError("unable to evaluate index of index expression: %s", ie);
+        }
+
+        if (isError(left)) {
+            return left;
+        }
+
+        if (isError(index)) {
+            return index;
+        }
+
+        if (left instanceof Array(List<MonkeyObject> elements) && index instanceof Int(long value)) {
+           if (value >= elements.size() || value < 0) {
+               return NULL;
+           }
+
+            return elements.get((int) value);
+        }
+
+        if (left instanceof Hash(var pairs)) {
+            if (!(index instanceof Hashable key)) {
+                return newError("unusable as hash key: %s", index.type());
+            }
+
+            var pair = pairs.get(key.hashKey());
+
+            if (pair == null) {
+                return NULL;
+            }
+
+            return pair.value();
+        }
+
+        return newError("index operator not supported: %s", left.type());
     }
 
     private static MonkeyObject applyFunction(MonkeyObject fn, List<MonkeyObject> args) {

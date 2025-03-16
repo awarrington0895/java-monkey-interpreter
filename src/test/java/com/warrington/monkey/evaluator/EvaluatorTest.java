@@ -79,7 +79,13 @@ class EvaluatorTest {
                 """
                     "Hello" - "World"
                     """,
-                    "unknown operator: STRING - STRING"
+                "unknown operator: STRING - STRING"
+            ),
+            Arguments.of(
+                """
+                    {"name": "Monkey"}[fn(x) { x }];
+                    """,
+                "unusable as hash key: FUNCTION"
             )
         );
     }
@@ -90,6 +96,98 @@ class EvaluatorTest {
             Arguments.of("let a = 5 * 5; a;", 25),
             Arguments.of("let a = 5; let b = a; b;", 5),
             Arguments.of("let a = 5; let b = a; let c = a + b + 5; c;", 15)
+        );
+    }
+
+    private static Stream<Arguments> provideArrayIndexExpressions() {
+        return Stream.of(
+            Arguments.of("[1, 2, 3][0]", 1L),
+            Arguments.of("[1, 2, 3][1]", 2L),
+            Arguments.of("[1, 2, 3][2]", 3L),
+            Arguments.of("let i = 0; [1][i];", 1L),
+            Arguments.of("[1, 2, 3][1 + 1];", 3L),
+            Arguments.of("let myArray = [1, 2, 3]; myArray[2];", 3L),
+            Arguments.of("let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 6L),
+            Arguments.of("let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", 2L),
+            Arguments.of("[1, 2, 3][3]", null),
+            Arguments.of("[1, 2, 3][-1]", null)
+        );
+    }
+
+    private static Stream<Arguments> provideHashIndexExpressions() {
+        return Stream.of(
+            Arguments.of("{\"foo\": 5}[\"foo\"]", 5L),
+
+            Arguments.of("""
+                {"foo": 5}["bar"]""", null),
+
+            Arguments.of("""
+                let key = "foo"; {"foo": 5}[key]""", 5L),
+
+            Arguments.of("""
+                {}["foo"]""", null),
+
+            Arguments.of("""
+                {5: 5}[5]
+                """, 5L),
+
+            Arguments.of("""
+                {true: 5}[true]
+                """, 5L),
+
+            Arguments.of("""
+                {false: 5}[false]
+                """, 5L)
+        );
+    }
+
+    private static Stream<Arguments> provideBuiltins() {
+        return Stream.of(
+            Arguments.of("len(\"\")", 0L),
+            Arguments.of("len(\"four\")", 4L),
+            Arguments.of("len(\"hello world\")", 11L),
+            Arguments.of("len(1)", "argument to 'len' not supported, got INTEGER"),
+            Arguments.of("len(\"one\", \"two\")", "wrong number of arguments. got=2, want=1"),
+            Arguments.of("len([1, 2, 3])", 3L),
+            Arguments.of("len([])", 0L),
+            Arguments.of("let a = [1+1, 2]; len(a)", 2L),
+            Arguments.of("first([10, 15, 20])", 10L),
+            Arguments.of("first([])", null),
+            Arguments.of("first(1)", "argument to 'first' not supported, got INTEGER"),
+            Arguments.of("last([10, 15, 20])", 20L),
+            Arguments.of("last([10])", 10L),
+            Arguments.of("last([])", null),
+            Arguments.of("last(1)", "argument to 'last' not supported, got INTEGER"),
+            Arguments.of("rest([10, 15, 20])", List.of(15L, 20L)),
+            Arguments.of("rest([10])", Collections.emptyList()),
+            Arguments.of("rest([])", null),
+            Arguments.of("rest(\"test\")", "argument to 'rest' not supported, got STRING"),
+
+            // Test that rest does not modify original array
+            Arguments.of(
+                """
+                    let a = [1, 2, 3];
+                    
+                    let b = rest(a);
+                    
+                    a;
+                    """,
+                List.of(1L, 2L, 3L)
+            ),
+            Arguments.of("push([], 1)", List.of(1L)),
+            Arguments.of("push([1], 2)", List.of(1L, 2L)),
+            Arguments.of("push(1, [2])", "first argument to 'push' must be ARRAY, got INTEGER")
+        );
+    }
+
+    private static Stream<Arguments> provideFunctionApplications() {
+        return Stream.of(
+            Arguments.of("let identity = fn(x) { x; }; identity(5);", 5L),
+            Arguments.of("let identity = fn(x) { return x; }; identity(5);", 5L),
+            Arguments.of("let double = fn(x) { x * 2; }; double(5)", 10L),
+            Arguments.of("let add = fn(x, y) { x + y; }; add(5, 5);", 10L),
+            Arguments.of("let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20L),
+            Arguments.of("fn(x) { x; }(5)", 5L)
         );
     }
 
@@ -116,21 +214,6 @@ class EvaluatorTest {
         testIntegerObject(evaluated, expected);
     }
 
-    private static Stream<Arguments> provideArrayIndexExpressions() {
-        return Stream.of(
-            Arguments.of("[1, 2, 3][0]", 1L),
-            Arguments.of("[1, 2, 3][1]", 2L),
-            Arguments.of("[1, 2, 3][2]", 3L),
-            Arguments.of("let i = 0; [1][i];", 1L),
-            Arguments.of("[1, 2, 3][1 + 1];", 3L),
-            Arguments.of("let myArray = [1, 2, 3]; myArray[2];", 3L),
-            Arguments.of("let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 6L),
-            Arguments.of("let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", 2L),
-            Arguments.of("[1, 2, 3][3]", null),
-            Arguments.of("[1, 2, 3][-1]", null)
-        );
-    }
-
     @ParameterizedTest
     @MethodSource("provideArrayIndexExpressions")
     void testArrayIndexExpressions(String input, Long expected) {
@@ -143,18 +226,30 @@ class EvaluatorTest {
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("provideHashIndexExpressions")
+    void testHashIndexExpressions(String input, Long result) {
+        MonkeyObject evaluated = testEval(input);
+
+        if (result == null) {
+            testNullObject(evaluated);
+        } else {
+            testIntegerObject(evaluated, result);
+        }
+    }
+
     @Test
     void testHashLiterals() {
-       final var input = """
-           let two = "two";
-            {
-            "one": 10 - 9,
-            two: 1 + 1,
-            "thr" + "ee": 6 / 2,
-            4: 4,
-            true: 5,
-            false: 6
-            }""";
+        final var input = """
+            let two = "two";
+             {
+             "one": 10 - 9,
+             two: 1 + 1,
+             "thr" + "ee": 6 / 2,
+             4: 4,
+             true: 5,
+             false: 6
+             }""";
 
         final MonkeyObject evaluated = testEval(input);
 
@@ -254,45 +349,6 @@ class EvaluatorTest {
         testIntegerObject(array.elements().get(2), 6L);
     }
 
-    private static Stream<Arguments> provideBuiltins() {
-        return Stream.of(
-            Arguments.of("len(\"\")", 0L),
-            Arguments.of("len(\"four\")", 4L),
-            Arguments.of("len(\"hello world\")", 11L),
-            Arguments.of("len(1)", "argument to 'len' not supported, got INTEGER"),
-            Arguments.of("len(\"one\", \"two\")", "wrong number of arguments. got=2, want=1"),
-            Arguments.of("len([1, 2, 3])", 3L),
-            Arguments.of("len([])", 0L),
-            Arguments.of("let a = [1+1, 2]; len(a)", 2L),
-            Arguments.of("first([10, 15, 20])", 10L),
-            Arguments.of("first([])", null),
-            Arguments.of("first(1)", "argument to 'first' not supported, got INTEGER"),
-            Arguments.of("last([10, 15, 20])", 20L),
-            Arguments.of("last([10])", 10L),
-            Arguments.of("last([])", null),
-            Arguments.of("last(1)", "argument to 'last' not supported, got INTEGER"),
-            Arguments.of("rest([10, 15, 20])", List.of(15L, 20L)),
-            Arguments.of("rest([10])", Collections.emptyList()),
-            Arguments.of("rest([])", null),
-            Arguments.of("rest(\"test\")", "argument to 'rest' not supported, got STRING"),
-
-            // Test that rest does not modify original array
-            Arguments.of(
-                """
-                    let a = [1, 2, 3];
-                    
-                    let b = rest(a);
-                    
-                    a;
-                    """,
-                List.of(1L, 2L, 3L)
-            ),
-            Arguments.of("push([], 1)", List.of(1L)),
-            Arguments.of("push([1], 2)", List.of(1L, 2L)),
-            Arguments.of("push(1, [2])", "first argument to 'push' must be ARRAY, got INTEGER")
-        );
-    }
-
     @ParameterizedTest
     @MethodSource("provideBuiltins")
     void testBuiltins(String input, Object expected) {
@@ -304,7 +360,7 @@ class EvaluatorTest {
             return;
         }
 
-        switch(expected) {
+        switch (expected) {
             case Long i -> testIntegerObject(evaluated, i);
             case String s -> {
                 assertThat(evaluated)
@@ -465,21 +521,10 @@ class EvaluatorTest {
             .isEqualTo(expectedBody);
     }
 
-    private static Stream<Arguments> provideFunctionApplications() {
-        return Stream.of(
-            Arguments.of("let identity = fn(x) { x; }; identity(5);", 5L),
-            Arguments.of("let identity = fn(x) { return x; }; identity(5);", 5L),
-            Arguments.of("let double = fn(x) { x * 2; }; double(5)", 10L),
-            Arguments.of("let add = fn(x, y) { x + y; }; add(5, 5);", 10L),
-            Arguments.of("let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20L),
-            Arguments.of("fn(x) { x; }(5)", 5L)
-        );
-    }
-
     @ParameterizedTest
     @MethodSource("provideFunctionApplications")
     void testFunctionApplication(String input, long expected) {
-       testIntegerObject(testEval(input), expected);
+        testIntegerObject(testEval(input), expected);
     }
 
     @Test
