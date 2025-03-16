@@ -1,6 +1,6 @@
 package com.warrington.monkey.object;
 
-public record Bool(boolean value) implements MonkeyObject {
+public record Bool(boolean value) implements MonkeyObject, Hashable {
     @Override
     public ObjectType type() {
         return ObjectType.BOOLEAN;

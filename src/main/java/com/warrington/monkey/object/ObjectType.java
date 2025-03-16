@@ -9,5 +9,6 @@ public enum ObjectType {
     FUNCTION,
     STRING,
     BUILTIN,
-    ARRAY
+    ARRAY,
+    HASH
 }

@@ -1,6 +1,6 @@
 package com.warrington.monkey.object;
 
-public record Str(String value) implements MonkeyObject {
+public record Str(String value) implements MonkeyObject, Hashable {
 
     @Override
     public ObjectType type() {
