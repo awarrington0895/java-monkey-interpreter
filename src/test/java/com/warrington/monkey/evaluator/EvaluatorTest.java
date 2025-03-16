@@ -12,6 +12,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static com.warrington.monkey.evaluator.Evaluator.NULL;
@@ -140,6 +141,47 @@ class EvaluatorTest {
         } else {
             testNullObject(evaluated);
         }
+    }
+
+    @Test
+    void testHashLiterals() {
+       final var input = """
+           let two = "two";
+            {
+            "one": 10 - 9,
+            two: 1 + 1,
+            "thr" + "ee": 6 / 2,
+            4: 4,
+            true: 5,
+            false: 6
+            }""";
+
+        final MonkeyObject evaluated = testEval(input);
+
+        assertThat(evaluated)
+            .isInstanceOf(Hash.class);
+
+        final Hash evaledHash = (Hash) evaluated;
+
+        var expected = Map.of(
+            new Str("one").hashKey(), 1L,
+            new Str("two").hashKey(), 2L,
+            new Str("three").hashKey(), 3L,
+            new Int(4).hashKey(), 4L,
+            Evaluator.TRUE.hashKey(), 5L,
+            Evaluator.FALSE.hashKey(), 6L
+        );
+
+        assertThat(evaledHash.pairs())
+            .hasSize(expected.size());
+
+        expected.forEach((expectedKey, expectedValue) -> {
+            final var pair = evaledHash.pairs().get(expectedKey);
+
+            assertThat(pair).isNotNull();
+
+            testIntegerObject(pair.value(), expectedValue);
+        });
     }
 
     @Test

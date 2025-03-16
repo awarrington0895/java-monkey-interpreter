@@ -5,6 +5,7 @@ import com.warrington.monkey.object.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 public class Evaluator {
@@ -12,8 +13,8 @@ public class Evaluator {
     public static final Null NULL = new Null();
     // No need to allocate new objects for true/false whenever it is encountered
     // Can simply reference these constants
-    private static final Bool TRUE = new Bool(true);
-    private static final Bool FALSE = new Bool(false);
+    static final Bool TRUE = new Bool(true);
+    static final Bool FALSE = new Bool(false);
 
     public static MonkeyObject eval(Node node, Environment env) {
         return switch (node) {
@@ -47,6 +48,7 @@ public class Evaluator {
             case IntegerLiteral il -> new Int(il.value());
             case StringLiteral sl -> new Str(sl.value());
             case MonkeyBoolean mb -> nativeBoolToBooleanObject(mb.value());
+            case HashLiteral hl -> evalHashLiteral(hl, env);
             case PrefixExpression pe -> {
                 MonkeyObject right = eval(pe.right(), env);
 
@@ -198,6 +200,36 @@ public class Evaluator {
         }
 
         return value;
+    }
+
+    private static MonkeyObject evalHashLiteral(HashLiteral hash, Environment env) {
+        var pairs = new HashMap<HashKey, HashPair>();
+
+        for (var entry : hash.pairs().entrySet()) {
+           var key = eval(entry.getKey(), env);
+
+           if (key == null) {
+               return newError("cannot parse object: %s", entry.getKey().toString());
+           }
+
+           if (isError(key)) {
+               return key;
+           }
+
+           if (!(key instanceof Hashable hashable)) {
+               return newError("unusable as hash key: %s", key.type());
+           }
+
+           var value = eval(entry.getValue(), env);
+
+           if (isError(value)) {
+               return value;
+           }
+
+           pairs.put(hashable.hashKey(), new HashPair(key, value));
+        }
+
+        return new Hash(pairs);
     }
 
     private static MonkeyObject evalBlockStatement(BlockStatement block, Environment env) {
