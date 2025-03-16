@@ -10,4 +10,8 @@ public record Bool(boolean value) implements MonkeyObject {
     public String inspect() {
         return "%s".formatted(value);
     }
+
+    public HashKey hashKey() {
+        return new HashKey(ObjectType.BOOLEAN, Boolean.hashCode(this.value));
+    }
 }

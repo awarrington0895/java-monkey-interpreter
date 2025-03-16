@@ -11,4 +11,8 @@ public record Str(String value) implements MonkeyObject {
     public String inspect() {
         return value;
     }
+
+    public HashKey hashKey() {
+       return new HashKey(ObjectType.STRING, this.value.hashCode());
+    }
 }

@@ -143,6 +143,55 @@ class EvaluatorTest {
     }
 
     @Test
+    void testStringHashKey() {
+        final var hello1 = new Str("Hello World");
+        final var hello2 = new Str("Hello World");
+        final var diff1 = new Str("My name is johnny");
+        final var diff2 = new Str("My name is johnny");
+
+        assertThat(hello1.hashKey())
+            .isEqualTo(hello2.hashKey());
+
+        assertThat(diff1.hashKey())
+            .isEqualTo(diff2.hashKey());
+
+        assertThat(hello1.hashKey())
+            .isNotEqualTo(diff1.hashKey());
+    }
+
+    @Test
+    void testBooleanHashKey() {
+        final var True = new Bool(true);
+        final var False = new Bool(false);
+
+        assertThat(True.hashKey())
+            .isEqualTo(True.hashKey());
+
+        assertThat(False.hashKey())
+            .isEqualTo(False.hashKey());
+
+        assertThat(True.hashKey())
+            .isNotEqualTo(False.hashKey());
+    }
+
+    @Test
+    void testIntegerHashKey() {
+        final var same1 = new Int(10);
+        final var same2 = new Int(10);
+        final var diff1 = new Int(28);
+        final var diff2 = new Int(28);
+
+        assertThat(same1.hashKey())
+            .isEqualTo(same2.hashKey());
+
+        assertThat(diff1.hashKey())
+            .isEqualTo(diff2.hashKey());
+
+        assertThat(same1.hashKey())
+            .isNotEqualTo(diff1.hashKey());
+    }
+
+    @Test
     void testArrayLiterals() {
         final var input = "[1, 2 * 2, 3 + 3]";
 

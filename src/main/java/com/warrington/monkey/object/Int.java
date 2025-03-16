@@ -16,4 +16,8 @@ public record Int(long value) implements MonkeyObject {
     public String inspect() {
         return "%d".formatted(value);
     }
+
+    public HashKey hashKey() {
+        return new HashKey(ObjectType.INTEGER, Long.hashCode(this.value));
+    }
 }
