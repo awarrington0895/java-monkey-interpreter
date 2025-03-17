@@ -2,10 +2,7 @@ package com.warrington.monkey.evaluator;
 
 import com.warrington.monkey.object.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.warrington.monkey.evaluator.Evaluator.NULL;
 
@@ -15,8 +12,15 @@ public class Builtins {
         "first", new Builtin(Builtins::first),
         "last", new Builtin(Builtins::last),
         "rest", new Builtin(Builtins::rest),
-        "push", new Builtin(Builtins::push)
+        "push", new Builtin(Builtins::push),
+        "puts", new Builtin(Builtins::puts)
     );
+
+    private static MonkeyObject puts(MonkeyObject... args) {
+        Arrays.stream(args).forEach(arg -> System.out.println(arg.inspect()));
+
+        return NULL;
+    }
 
     private static MonkeyObject len(MonkeyObject... args) {
         if (args.length != 1) {

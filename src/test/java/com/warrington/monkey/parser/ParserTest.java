@@ -5,6 +5,8 @@ import com.warrington.monkey.lexer.Lexer;
 import com.warrington.monkey.token.Token;
 import com.warrington.monkey.token.TokenType;
 import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -13,6 +15,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -157,9 +161,143 @@ class ParserTest {
         testLiteralExpression(exp.right(), value);
     }
 
+    @Nested
+    @DisplayName("ParseHashLiteral")
+    class HashLiteralTests {
+        @Test
+        void testParsingHashLiteralStringKeys() {
+            final var input = """
+            {"one": 1, "two": 2, "three": 3}""";
+
+            List<Statement> statements = testParse(input);
+
+            final var expression = ((ExpressionStatement) statements.getFirst()).getExpression();
+
+            assertThat(expression)
+                .withFailMessage("exp not HashLiteral. got=%s", expression)
+                .isInstanceOf(HashLiteral.class);
+
+            final var hashLiteral = (HashLiteral) expression;
+
+            assertThat(hashLiteral.pairs())
+                .hasSize(3);
+
+            var expected = Map.of(
+                "one", 1L,
+                "two", 2L,
+                "three", 3L
+            );
+
+            for (Map.Entry<Expression, Expression> entry : hashLiteral.pairs().entrySet()) {
+                assertThat(entry.getKey())
+                    .isInstanceOf(StringLiteral.class);
+
+                if (entry.getKey() instanceof StringLiteral sl) {
+                    testIntegerLiteral(entry.getValue(), expected.get(sl.toString()));
+                }
+            }
+        }
+
+        @Test
+        void testParsingHashWithSinglePair() {
+            final var input = """
+            {"one": 1}""";
+
+            List<Statement> statements = testParse(input);
+
+            final var expression = ((ExpressionStatement) statements.getFirst()).getExpression();
+
+            assertThat(expression)
+                .withFailMessage("exp not HashLiteral. got=%s", expression)
+                .isInstanceOf(HashLiteral.class);
+
+            final var hashLiteral = (HashLiteral) expression;
+
+            assertThat(hashLiteral.pairs())
+                .hasSize(1);
+
+            var expected = Map.of(
+                "one", 1L
+            );
+
+            for (Map.Entry<Expression, Expression> entry : hashLiteral.pairs().entrySet()) {
+                assertThat(entry.getKey())
+                    .isInstanceOf(StringLiteral.class);
+
+                if (entry.getKey() instanceof StringLiteral sl) {
+                    testIntegerLiteral(entry.getValue(), expected.get(sl.toString()));
+                }
+            }
+        }
+        @Test
+        void testParsingEmptyHashLiteral() {
+            final var input = "{}";
+
+            List<Statement> statements = testParse(input);
+
+            final var expression = ((ExpressionStatement) statements.getFirst()).getExpression();
+
+            assertThat(expression)
+                .isInstanceOf(HashLiteral.class);
+
+            if (expression instanceof HashLiteral hl) {
+                assertThat(hl.pairs())
+                    .hasSize(0);
+            }
+        }
+
+        @Test
+        void testParsingHashLiteralWithExpressions() {
+            final var input = """
+            {"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}""";
+
+            List<Statement> statements = testParse(input);
+
+            final var expression = ((ExpressionStatement) statements.getFirst()).getExpression();
+
+            assertThat(expression)
+                .withFailMessage("exp not HashLiteral. got=%s", expression)
+                .isInstanceOf(HashLiteral.class);
+
+            final var hashLiteral = (HashLiteral) expression;
+
+            assertThat(hashLiteral.pairs())
+                .hasSize(3);
+
+            var expected = Map.of(
+                "one", 1L,
+                "two", 2L,
+                "three", 3L
+            );
+
+            Map<String, Consumer<Expression>> tests = Map.of(
+                "one", exp -> testInfixExpression(exp, 0, "+", 1),
+                "two", exp -> testInfixExpression(exp, 10, "-", 8),
+                "three", exp -> testInfixExpression(exp, 15, "/", 5)
+            );
+
+            for (var entry : hashLiteral.pairs().entrySet()) {
+                var key = entry.getKey();
+
+                assertThat(key)
+                    .isInstanceOf(StringLiteral.class);
+
+                if (key instanceof StringLiteral sl) {
+                    var testFunc = tests.get(sl.toString());
+
+                    assertThat(testFunc)
+                        .withFailMessage("No test function for key %s found", sl.toString())
+                        .isNotNull();
+
+                    testFunc.accept(entry.getValue());
+                }
+            }
+        }
+    }
+
     @Test
     void testParsingEmptyArrayLiteral() {
-       final var input = "[]";
+        final var input = "[]";
 
         var expression = ((ExpressionStatement) testParse(input).getFirst()).getExpression();
 
@@ -176,21 +314,21 @@ class ParserTest {
 
     @Test
     void testParsingIndexExpression() {
-       final var input = "myArray[1 + 1]";
+        final var input = "myArray[1 + 1]";
 
-       List<Statement> stmts = testParse(input);
+        List<Statement> stmts = testParse(input);
 
-       ExpressionStatement expStmt = (ExpressionStatement) stmts.getFirst();
+        ExpressionStatement expStmt = (ExpressionStatement) stmts.getFirst();
 
-       assertThat(expStmt.getExpression())
-           .withFailMessage("exp not IndexExpression. got=%s", expStmt.getExpression().getClass())
-           .isInstanceOf(IndexExpression.class);
+        assertThat(expStmt.getExpression())
+            .withFailMessage("exp not IndexExpression. got=%s", expStmt.getExpression().getClass())
+            .isInstanceOf(IndexExpression.class);
 
-       var indexExp = (IndexExpression) expStmt.getExpression();
+        var indexExp = (IndexExpression) expStmt.getExpression();
 
-       testIdentifier(indexExp.left(), "myArray");
+        testIdentifier(indexExp.left(), "myArray");
 
-       testInfixExpression(indexExp.index(), 1, "+", 1);
+        testInfixExpression(indexExp.index(), 1, "+", 1);
     }
 
     @Test
@@ -680,7 +818,7 @@ class ParserTest {
             .isEqualTo(value);
     }
 
-    void testIntegerLiteral(Expression intLiteralExpression, int value) {
+    void testIntegerLiteral(Expression intLiteralExpression, long value) {
         var intLiteral = (IntegerLiteral) intLiteralExpression;
 
         assertThat(intLiteral.value())

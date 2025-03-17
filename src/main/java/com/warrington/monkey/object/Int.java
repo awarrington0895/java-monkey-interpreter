@@ -5,7 +5,7 @@ package com.warrington.monkey.object;
  *
  * @param value this is a long since it is intended to be 64 bit
  */
-public record Int(long value) implements MonkeyObject {
+public record Int(long value) implements MonkeyObject, Hashable {
 
     @Override
     public ObjectType type() {
@@ -15,5 +15,9 @@ public record Int(long value) implements MonkeyObject {
     @Override
     public String inspect() {
         return "%d".formatted(value);
+    }
+
+    public HashKey hashKey() {
+        return new HashKey(ObjectType.INTEGER, Long.hashCode(this.value));
     }
 }

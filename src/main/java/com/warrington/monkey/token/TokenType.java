@@ -26,6 +26,7 @@ public enum TokenType {
     GT(">"),
     EQ("=="),
     NOT_EQ("!="),
+    COLON(":"),
 
     // Keywords
     FUNCTION("FUNCTION"),

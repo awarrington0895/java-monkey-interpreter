@@ -34,6 +34,7 @@ class LexerTest {
         "foo bar"
         "tellme!"
         [1, 2];
+        { "foo": "bar" }
         """;
 
     @Test
@@ -123,6 +124,11 @@ class LexerTest {
             new Token(INT, "2"),
             new Token(RBRACKET, "]"),
             new Token(SEMICOLON, ";"),
+            new Token(LSQUIRLY, "{"),
+            new Token(STRING, "foo"),
+            new Token(COLON, ":"),
+            new Token(STRING, "bar"),
+            new Token(RSQUIRLY, "}"),
             new Token(EOF, ""));
 
         Token token = null;

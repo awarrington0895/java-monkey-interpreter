@@ -12,6 +12,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static com.warrington.monkey.evaluator.Evaluator.NULL;
@@ -78,7 +79,13 @@ class EvaluatorTest {
                 """
                     "Hello" - "World"
                     """,
-                    "unknown operator: STRING - STRING"
+                "unknown operator: STRING - STRING"
+            ),
+            Arguments.of(
+                """
+                    {"name": "Monkey"}[fn(x) { x }];
+                    """,
+                "unusable as hash key: FUNCTION"
             )
         );
     }
@@ -90,29 +97,6 @@ class EvaluatorTest {
             Arguments.of("let a = 5; let b = a; b;", 5),
             Arguments.of("let a = 5; let b = a; let c = a + b + 5; c;", 15)
         );
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        "5,5",
-        "10,10",
-        "-5,-5",
-        "-10,-10",
-        "5 + 5 + 5 + 5 - 10,10",
-        "2 * 2 * 2 * 2 * 2,32",
-        "-50 + 100 + -50,0",
-        "5 * 2 + 10,20",
-        "5 + 2 * 10,25",
-        "20 + 2 * -10,0",
-        "50 / 2 * 2 + 10,60",
-        "2 * (5 + 10),30",
-        "3 * 3 * 3 + 10,37",
-        "3 * (3 * 3) + 10,37",
-        "(5 + 10 * 2 + 15 / 3) * 2 + -10,50"
-    })
-    void testEvalIntegerExpression(String input, long expected) {
-        MonkeyObject evaluated = testEval(input);
-        testIntegerObject(evaluated, expected);
     }
 
     private static Stream<Arguments> provideArrayIndexExpressions() {
@@ -130,37 +114,31 @@ class EvaluatorTest {
         );
     }
 
-    @ParameterizedTest
-    @MethodSource("provideArrayIndexExpressions")
-    void testArrayIndexExpressions(String input, Long expected) {
-        MonkeyObject evaluated = testEval(input);
+    private static Stream<Arguments> provideHashIndexExpressions() {
+        return Stream.of(
+            Arguments.of("{\"foo\": 5}[\"foo\"]", 5L),
 
-        if (evaluated instanceof Int i) {
-            testIntegerObject(i, expected);
-        } else {
-            testNullObject(evaluated);
-        }
-    }
+            Arguments.of("""
+                {"foo": 5}["bar"]""", null),
 
-    @Test
-    void testArrayLiterals() {
-        final var input = "[1, 2 * 2, 3 + 3]";
+            Arguments.of("""
+                let key = "foo"; {"foo": 5}[key]""", 5L),
 
-        MonkeyObject evaluated = testEval(input);
+            Arguments.of("""
+                {}["foo"]""", null),
 
-        assertThat(evaluated)
-            .withFailMessage("object is not Array. got=%s", evaluated.type())
-            .isInstanceOf(Array.class);
+            Arguments.of("""
+                {5: 5}[5]
+                """, 5L),
 
-        Array array = (Array) evaluated;
+            Arguments.of("""
+                {true: 5}[true]
+                """, 5L),
 
-        assertThat(array.elements().size())
-            .withFailMessage("array has wrong number of elements. got=%d", array.elements().size())
-            .isEqualTo(3);
-
-        testIntegerObject(array.elements().getFirst(), 1L);
-        testIntegerObject(array.elements().get(1), 4L);
-        testIntegerObject(array.elements().get(2), 6L);
+            Arguments.of("""
+                {false: 5}[false]
+                """, 5L)
+        );
     }
 
     private static Stream<Arguments> provideBuiltins() {
@@ -202,6 +180,175 @@ class EvaluatorTest {
         );
     }
 
+    private static Stream<Arguments> provideFunctionApplications() {
+        return Stream.of(
+            Arguments.of("let identity = fn(x) { x; }; identity(5);", 5L),
+            Arguments.of("let identity = fn(x) { return x; }; identity(5);", 5L),
+            Arguments.of("let double = fn(x) { x * 2; }; double(5)", 10L),
+            Arguments.of("let add = fn(x, y) { x + y; }; add(5, 5);", 10L),
+            Arguments.of("let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20L),
+            Arguments.of("fn(x) { x; }(5)", 5L)
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "5,5",
+        "10,10",
+        "-5,-5",
+        "-10,-10",
+        "5 + 5 + 5 + 5 - 10,10",
+        "2 * 2 * 2 * 2 * 2,32",
+        "-50 + 100 + -50,0",
+        "5 * 2 + 10,20",
+        "5 + 2 * 10,25",
+        "20 + 2 * -10,0",
+        "50 / 2 * 2 + 10,60",
+        "2 * (5 + 10),30",
+        "3 * 3 * 3 + 10,37",
+        "3 * (3 * 3) + 10,37",
+        "(5 + 10 * 2 + 15 / 3) * 2 + -10,50"
+    })
+    void testEvalIntegerExpression(String input, long expected) {
+        MonkeyObject evaluated = testEval(input);
+        testIntegerObject(evaluated, expected);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideArrayIndexExpressions")
+    void testArrayIndexExpressions(String input, Long expected) {
+        MonkeyObject evaluated = testEval(input);
+
+        if (evaluated instanceof Int i) {
+            testIntegerObject(i, expected);
+        } else {
+            testNullObject(evaluated);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideHashIndexExpressions")
+    void testHashIndexExpressions(String input, Long result) {
+        MonkeyObject evaluated = testEval(input);
+
+        if (result == null) {
+            testNullObject(evaluated);
+        } else {
+            testIntegerObject(evaluated, result);
+        }
+    }
+
+    @Test
+    void testHashLiterals() {
+        final var input = """
+            let two = "two";
+             {
+             "one": 10 - 9,
+             two: 1 + 1,
+             "thr" + "ee": 6 / 2,
+             4: 4,
+             true: 5,
+             false: 6
+             }""";
+
+        final MonkeyObject evaluated = testEval(input);
+
+        assertThat(evaluated)
+            .isInstanceOf(Hash.class);
+
+        final Hash evaledHash = (Hash) evaluated;
+
+        var expected = Map.of(
+            new Str("one").hashKey(), 1L,
+            new Str("two").hashKey(), 2L,
+            new Str("three").hashKey(), 3L,
+            new Int(4).hashKey(), 4L,
+            Evaluator.TRUE.hashKey(), 5L,
+            Evaluator.FALSE.hashKey(), 6L
+        );
+
+        assertThat(evaledHash.pairs())
+            .hasSize(expected.size());
+
+        expected.forEach((expectedKey, expectedValue) -> {
+            final var pair = evaledHash.pairs().get(expectedKey);
+
+            assertThat(pair).isNotNull();
+
+            testIntegerObject(pair.value(), expectedValue);
+        });
+    }
+
+    @Test
+    void testStringHashKey() {
+        final var hello1 = new Str("Hello World");
+        final var hello2 = new Str("Hello World");
+        final var diff1 = new Str("My name is johnny");
+        final var diff2 = new Str("My name is johnny");
+
+        assertThat(hello1.hashKey())
+            .isEqualTo(hello2.hashKey());
+
+        assertThat(diff1.hashKey())
+            .isEqualTo(diff2.hashKey());
+
+        assertThat(hello1.hashKey())
+            .isNotEqualTo(diff1.hashKey());
+    }
+
+    @Test
+    void testBooleanHashKey() {
+        final var True = new Bool(true);
+        final var False = new Bool(false);
+
+        assertThat(True.hashKey())
+            .isEqualTo(True.hashKey());
+
+        assertThat(False.hashKey())
+            .isEqualTo(False.hashKey());
+
+        assertThat(True.hashKey())
+            .isNotEqualTo(False.hashKey());
+    }
+
+    @Test
+    void testIntegerHashKey() {
+        final var same1 = new Int(10);
+        final var same2 = new Int(10);
+        final var diff1 = new Int(28);
+        final var diff2 = new Int(28);
+
+        assertThat(same1.hashKey())
+            .isEqualTo(same2.hashKey());
+
+        assertThat(diff1.hashKey())
+            .isEqualTo(diff2.hashKey());
+
+        assertThat(same1.hashKey())
+            .isNotEqualTo(diff1.hashKey());
+    }
+
+    @Test
+    void testArrayLiterals() {
+        final var input = "[1, 2 * 2, 3 + 3]";
+
+        MonkeyObject evaluated = testEval(input);
+
+        assertThat(evaluated)
+            .withFailMessage("object is not Array. got=%s", evaluated.type())
+            .isInstanceOf(Array.class);
+
+        Array array = (Array) evaluated;
+
+        assertThat(array.elements().size())
+            .withFailMessage("array has wrong number of elements. got=%d", array.elements().size())
+            .isEqualTo(3);
+
+        testIntegerObject(array.elements().getFirst(), 1L);
+        testIntegerObject(array.elements().get(1), 4L);
+        testIntegerObject(array.elements().get(2), 6L);
+    }
+
     @ParameterizedTest
     @MethodSource("provideBuiltins")
     void testBuiltins(String input, Object expected) {
@@ -213,7 +360,7 @@ class EvaluatorTest {
             return;
         }
 
-        switch(expected) {
+        switch (expected) {
             case Long i -> testIntegerObject(evaluated, i);
             case String s -> {
                 assertThat(evaluated)
@@ -374,21 +521,10 @@ class EvaluatorTest {
             .isEqualTo(expectedBody);
     }
 
-    private static Stream<Arguments> provideFunctionApplications() {
-        return Stream.of(
-            Arguments.of("let identity = fn(x) { x; }; identity(5);", 5L),
-            Arguments.of("let identity = fn(x) { return x; }; identity(5);", 5L),
-            Arguments.of("let double = fn(x) { x * 2; }; double(5)", 10L),
-            Arguments.of("let add = fn(x, y) { x + y; }; add(5, 5);", 10L),
-            Arguments.of("let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20L),
-            Arguments.of("fn(x) { x; }(5)", 5L)
-        );
-    }
-
     @ParameterizedTest
     @MethodSource("provideFunctionApplications")
     void testFunctionApplication(String input, long expected) {
-       testIntegerObject(testEval(input), expected);
+        testIntegerObject(testEval(input), expected);
     }
 
     @Test

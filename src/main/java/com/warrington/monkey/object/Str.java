@@ -1,6 +1,6 @@
 package com.warrington.monkey.object;
 
-public record Str(String value) implements MonkeyObject {
+public record Str(String value) implements MonkeyObject, Hashable {
 
     @Override
     public ObjectType type() {
@@ -10,5 +10,9 @@ public record Str(String value) implements MonkeyObject {
     @Override
     public String inspect() {
         return value;
+    }
+
+    public HashKey hashKey() {
+       return new HashKey(ObjectType.STRING, this.value.hashCode());
     }
 }
